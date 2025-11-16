@@ -19,7 +19,10 @@ class Class3Verifier:
         self.db = db
         self.tenant_id = tenant_id
         self.logger = ActivityLogger(db, tenant_id)
-        self.client = OpenAI()
+        # Use Replit AI Integrations - no API key needed, billed to credits
+        base_url = os.getenv('AI_INTEGRATIONS_OPENAI_BASE_URL')
+        api_key = os.getenv('AI_INTEGRATIONS_OPENAI_API_KEY')
+        self.client = OpenAI(base_url=base_url, api_key=api_key)
     
     def verify_class3_status(self, dealer_name: str, city: str, state: str, website: str = None) -> dict:
         """
