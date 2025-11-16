@@ -152,6 +152,16 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-16: **Complete UI/UX Redesign of Dealer Management**
+  - Created dedicated `/dealers/import` page for importing dealers from ATF database
+  - Redesigned main `/dealers` page as pipeline-based view with tabs:
+    - All, Discovered, Enriched, Ready to Contact, Contacted
+  - Added real-time activity sidebar showing AI enrichment progress (auto-refreshes every 3s)
+  - Stats dashboard showing: Total Dealers, Discovered, Enriched, Class 3 Verified, Contacted
+  - Smart filters: Search by name/city, filter by state
+  - Card-based layout replacing messy table view
+  - Fixed filter synchronization bug ensuring "Ready to Contact" respects search/state filters
+  - Replaced @chakra-ui/icons with react-icons for better dependency stability
 - 2025-11-16: **AI-Powered Class 3 SOT Verification**
   - Built Class3Verifier agent that analyzes dealer websites for Class 3 indicators
   - Searches for keywords: "Class 3", "SOT", "NFA", "suppressors", "silencers", "SBR"
