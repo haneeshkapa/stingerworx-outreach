@@ -152,14 +152,22 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-16: **REAL ATF Dealer List Integration**
+  - Uploaded official ATF dealer list with 78,408 total dealers
+  - Filtered for 6,066 Class 3 SOT dealers (SOT Type 2 - NFA/suppressor licenses)
+  - Updated ATF importer to read from Excel file and filter by SOT type
+  - Top states: TX (974), FL (545), GA (426), NC (332)
+  - System now imports verified Class 3 dealers instead of mock data
 - 2025-11-16: **AI-Powered Web Crawler Implemented**
   - Created AIBrowserAgent class using OpenAI AI Integrations
   - Multi-strategy search: DuckDuckGo → Google → AI prediction
   - AI extracts contact info (email, phone, address, forms) from webpages
-  - Successfully tested: AI predicts correct websites like capitolarmory.com, silencershop.com
   - No API keys required (uses Replit AI Integrations, billed to credits)
+- 2025-11-16: **Real-Time Activity Feed**
+  - Live monitoring of AI web crawling progress
+  - Auto-refreshes every 2 seconds
+  - Shows dealer search, website discovery, contact extraction steps
 - 2025-11-16: Initial project setup, database schema, basic UI
-- 2025-11-16: Seeded Stingerworx tenant with 5 sample dealers
 
 ## Next Steps
 1. Build ATF list importer
