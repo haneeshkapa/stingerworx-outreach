@@ -10,7 +10,7 @@ import {
   HStack,
   Icon,
 } from '@chakra-ui/react'
-import { CheckCircleIcon, WarningIcon, InfoIcon, SearchIcon } from '@chakra-ui/icons'
+import { FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaSearch } from 'react-icons/fa'
 import { activityApi } from '../services/api'
 
 export default function ActivitySidebar() {
@@ -37,15 +37,15 @@ export default function ActivitySidebar() {
   const getActivityIcon = (type) => {
     switch (type) {
       case 'DEALER_SAVED':
-        return { icon: CheckCircleIcon, color: 'green.500' }
+        return { icon: FaCheckCircle, color: 'green.500' }
       case 'WEBSITE_FOUND':
-        return { icon: CheckCircleIcon, color: 'blue.500' }
+        return { icon: FaCheckCircle, color: 'blue.500' }
       case 'DEALER_SEARCH':
-        return { icon: SearchIcon, color: 'purple.500' }
+        return { icon: FaSearch, color: 'purple.500' }
       case 'ERROR':
-        return { icon: WarningIcon, color: 'red.500' }
+        return { icon: FaExclamationTriangle, color: 'red.500' }
       default:
-        return { icon: InfoIcon, color: 'gray.500' }
+        return { icon: FaInfoCircle, color: 'gray.500' }
     }
   }
 

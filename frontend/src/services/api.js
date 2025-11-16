@@ -42,4 +42,8 @@ export const templatesApi = {
   getAll: () => api.get('/api/templates')
 }
 
+export const activityApi = {
+  getAll: (params) => api.get('/api/activity', { params })
+}
+
 export default api

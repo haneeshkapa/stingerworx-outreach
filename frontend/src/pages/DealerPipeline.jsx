@@ -29,7 +29,7 @@ import {
   StatNumber,
   StatHelpText,
 } from '@chakra-ui/react'
-import { SearchIcon, ExternalLinkIcon } from '@chakra-ui/icons'
+import { FaSearch, FaExternalLinkAlt } from 'react-icons/fa'
 import { dealersApi } from '../services/api'
 import { useNavigate } from 'react-router-dom'
 import ActivitySidebar from '../components/ActivitySidebar'
@@ -94,6 +94,10 @@ export default function DealerPipeline() {
 
   const filterByStatus = (status) => {
     return filteredDealers.filter(d => d.status === status)
+  }
+
+  const getReadyToContact = () => {
+    return filteredDealers.filter(d => d.status === 'ENRICHED' && d.sot_class === 'Class 3 SOT')
   }
 
   const getStatusBadge = (dealer) => {
@@ -191,7 +195,7 @@ export default function DealerPipeline() {
               <HStack spacing={4}>
                 <InputGroup flex={1}>
                   <InputLeftElement>
-                    <SearchIcon color="gray.400" />
+                    <FaSearch color="gray" />
                   </InputLeftElement>
                   <Input
                     placeholder="Search dealers by name or city..."
@@ -218,7 +222,7 @@ export default function DealerPipeline() {
                   <Tab>All ({filteredDealers.length})</Tab>
                   <Tab>Discovered ({filterByStatus('DISCOVERED').length})</Tab>
                   <Tab>Enriched ({filterByStatus('ENRICHED').length})</Tab>
-                  <Tab>Ready to Contact ({dealers.filter(d => d.status === 'ENRICHED' && d.sot_class === 'Class 3 SOT').length})</Tab>
+                  <Tab>Ready to Contact ({getReadyToContact().length})</Tab>
                   <Tab>Contacted ({filterByStatus('CONTACTED').length})</Tab>
                 </TabList>
 
@@ -234,7 +238,7 @@ export default function DealerPipeline() {
                   </TabPanel>
                   <TabPanel>
                     <DealerGrid 
-                      dealers={dealers.filter(d => d.status === 'ENRICHED' && d.sot_class === 'Class 3 SOT')} 
+                      dealers={getReadyToContact()} 
                       getStatusBadge={getStatusBadge} 
                     />
                   </TabPanel>
@@ -289,7 +293,7 @@ function DealerGrid({ dealers, getStatusBadge }) {
               
               {dealer.website && (
                 <HStack>
-                  <ExternalLinkIcon color="brand.500" />
+                  <FaExternalLinkAlt color="var(--chakra-colors-brand-500)" />
                   <Text
                     fontSize="sm"
                     color="brand.500"

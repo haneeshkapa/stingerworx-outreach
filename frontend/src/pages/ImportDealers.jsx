@@ -16,7 +16,7 @@ import {
   Divider,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircleIcon } from '@chakra-ui/icons'
+import { FaCheckCircle } from 'react-icons/fa'
 import { dealersApi } from '../services/api'
 
 const US_STATES = [
@@ -153,7 +153,7 @@ export default function ImportDealers() {
                 colorScheme={imported[state.code] ? 'green' : 'brand'}
                 isLoading={importing[state.code]}
                 onClick={() => handleImport(state.code)}
-                leftIcon={imported[state.code] ? <CheckCircleIcon /> : undefined}
+                leftIcon={imported[state.code] ? <FaCheckCircle /> : undefined}
               >
                 {state.code}
               </Button>
