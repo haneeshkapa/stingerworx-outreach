@@ -24,6 +24,14 @@ class OutreachStatus(str, enum.Enum):
     FAILED = "failed"
     RESPONDED = "responded"
 
+class ActivityType(str, enum.Enum):
+    DEALER_SEARCH = "dealer_search"
+    WEBSITE_FOUND = "website_found"
+    CONTACT_EXTRACTED = "contact_extracted"
+    DEALER_SAVED = "dealer_saved"
+    ERROR = "error"
+    INFO = "info"
+
 class Tenant(Base):
     __tablename__ = "tenants"
     
@@ -40,6 +48,7 @@ class Tenant(Base):
     dealers = relationship("Dealer", back_populates="tenant")
     templates = relationship("MessageTemplate", back_populates="tenant")
     outreach_attempts = relationship("OutreachAttempt", back_populates="tenant")
+    activity_logs = relationship("ActivityLog", back_populates="tenant")
 
 class User(Base):
     __tablename__ = "users"
@@ -114,3 +123,16 @@ class OutreachAttempt(Base):
     
     tenant = relationship("Tenant", back_populates="outreach_attempts")
     dealer = relationship("Dealer", back_populates="outreach_attempts")
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    activity_type = Column(SQLEnum(ActivityType), nullable=False, index=True)
+    dealer_name = Column(String)
+    message = Column(Text, nullable=False)
+    details = Column(JSON, default={})
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    tenant = relationship("Tenant", back_populates="activity_logs")

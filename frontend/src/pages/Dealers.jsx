@@ -20,8 +20,11 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  Grid,
+  GridItem,
 } from '@chakra-ui/react'
 import { dealersApi } from '../services/api'
+import ActivityFeed from '../components/ActivityFeed'
 
 export default function Dealers() {
   const [dealers, setDealers] = useState([])
@@ -100,9 +103,18 @@ export default function Dealers() {
   }
 
   return (
-    <Container maxW="1400px" py={8}>
+    <Container maxW="1600px" py={8}>
+      <Grid templateColumns="3fr 2fr" gap={6} mb={6}>
+        <GridItem>
+          <Heading>Dealer Directory</Heading>
+        </GridItem>
+        <GridItem>
+          <ActivityFeed autoRefresh={true} />
+        </GridItem>
+      </Grid>
+      
       <HStack justify="space-between" mb={6}>
-        <Heading>Dealer Directory</Heading>
+        <Box></Box>
         <Menu>
           <MenuButton as={Button} colorScheme="brand" isLoading={importing}>
             Import Dealers ▾

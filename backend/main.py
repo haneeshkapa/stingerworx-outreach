@@ -5,7 +5,7 @@ from typing import List, Optional
 import os
 
 from database import engine, get_db, Base
-from models import Tenant, User, Dealer, MessageTemplate, OutreachAttempt, DealerStatus, OutreachStatus
+from models import Tenant, User, Dealer, MessageTemplate, OutreachAttempt, DealerStatus, OutreachStatus, ActivityLog, ActivityType
 from auth import get_current_tenant_id
 from pydantic import BaseModel
 from datetime import datetime
@@ -144,13 +144,33 @@ def import_dealers_from_state(
     from scrapers.contact_enricher import ContactEnricher
     
     def import_task():
+        from scrapers.activity_logger import ActivityLogger
         importer = ATFImporter()
         enricher = ContactEnricher()
+        activity = ActivityLogger(db, tenant_id)
         
+        activity.info(f"Starting import for {state}")
         dealers = importer.import_from_state(state)
+        activity.info(f"Found {len(dealers)} dealers from ATF list")
         
         for dealer_data in dealers:
+            activity.dealer_search(
+                dealer_data['business_name'],
+                dealer_data.get('city', ''),
+                dealer_data.get('state', '')
+            )
+            
             enriched = enricher.enrich_dealer(dealer_data)
+            
+            if enriched.get('website'):
+                activity.website_found(enriched['business_name'], enriched['website'])
+            
+            contact_info = {
+                'email': enriched.get('email'),
+                'phone': enriched.get('phone'),
+                'contact_form_url': enriched.get('contact_form_url')
+            }
+            activity.contact_extracted(enriched['business_name'], contact_info)
             
             existing = db.query(Dealer).filter(
                 Dealer.tenant_id == tenant_id,
@@ -175,8 +195,10 @@ def import_dealers_from_state(
                     status=DealerStatus.ENRICHED if enriched.get('website') else DealerStatus.DISCOVERED
                 )
                 db.add(db_dealer)
+                activity.dealer_saved(enriched['business_name'])
         
         db.commit()
+        activity.info(f"Import complete for {state}")
     
     background_tasks.add_task(import_task)
     
@@ -282,6 +304,26 @@ def approve_outreach(
     db.commit()
     
     return {"message": "Outreach approved and sent", "id": outreach_id}
+
+@app.get("/api/activity")
+def get_activity_logs(
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_current_tenant_id)
+):
+    """Get recent activity logs for real-time progress tracking"""
+    logs = db.query(ActivityLog).filter(
+        ActivityLog.tenant_id == tenant_id
+    ).order_by(ActivityLog.created_at.desc()).limit(limit).all()
+    
+    return [{
+        "id": log.id,
+        "activity_type": log.activity_type,
+        "dealer_name": log.dealer_name,
+        "message": log.message,
+        "details": log.details,
+        "created_at": log.created_at
+    } for log in logs]
 
 @app.get("/api/stats", response_model=StatsResponse)
 def get_stats(
