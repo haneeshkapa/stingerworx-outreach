@@ -145,60 +145,64 @@ def import_dealers_from_state(
     
     def import_task():
         from scrapers.activity_logger import ActivityLogger
-        importer = ATFImporter()
-        enricher = ContactEnricher()
+        importer = ATFImporter(db, tenant_id)
+        enricher = ContactEnricher(db, tenant_id)
         activity = ActivityLogger(db, tenant_id)
         
-        activity.info(f"Starting import for {state}")
-        dealers = importer.import_from_state(state)
-        activity.info(f"Found {len(dealers)} dealers from ATF list")
+        # Import dealers from ATF list
+        num_imported = importer.import_dealers_from_state(state)
         
-        for dealer_data in dealers:
-            activity.dealer_search(
-                dealer_data['business_name'],
-                dealer_data.get('city', ''),
-                dealer_data.get('state', '')
-            )
+        if num_imported == 0:
+            activity.log('info', f'No dealers to enrich in {state}')
+            return
+        
+        # Get the newly imported dealers that need enrichment
+        new_dealers = db.query(Dealer).filter(
+            Dealer.tenant_id == tenant_id,
+            Dealer.state == state,
+            Dealer.status == DealerStatus.DISCOVERED
+        ).limit(min(num_imported, 5)).all()  # Limit to 5 for testing
+        
+        activity.log('info', f'Enriching {len(new_dealers)} dealers from {state}')
+        
+        # Enrich each dealer with AI (website, contact info, Class 3 verification)
+        for dealer in new_dealers:
+            activity.log('dealer_search', f'Enriching {dealer.business_name}', dealer_name=dealer.business_name)
             
-            enriched = enricher.enrich_dealer(dealer_data)
-            
-            if enriched.get('website'):
-                activity.website_found(enriched['business_name'], enriched['website'])
-            
-            contact_info = {
-                'email': enriched.get('email'),
-                'phone': enriched.get('phone'),
-                'contact_form_url': enriched.get('contact_form_url')
+            dealer_dict = {
+                'business_name': dealer.business_name,
+                'city': dealer.city,
+                'state': dealer.state
             }
-            activity.contact_extracted(enriched['business_name'], contact_info)
             
-            existing = db.query(Dealer).filter(
-                Dealer.tenant_id == tenant_id,
-                Dealer.ffl_number == enriched.get('ffl_number')
-            ).first()
+            # Enrich with AI (includes Class 3 verification)
+            enriched = enricher.enrich_dealer(dealer_dict, verify_class3=True)
             
-            if not existing:
-                db_dealer = Dealer(
-                    tenant_id=tenant_id,
-                    business_name=enriched['business_name'],
-                    ffl_number=enriched.get('ffl_number'),
-                    sot_class=enriched.get('license_type', 'Class 3'),
-                    address=enriched.get('address'),
-                    city=enriched.get('city'),
-                    state=enriched.get('state'),
-                    zip_code=enriched.get('zip_code'),
-                    phone=enriched.get('phone'),
-                    website=enriched.get('website'),
-                    email=enriched.get('email'),
-                    contact_form_url=enriched.get('contact_form_url'),
-                    source=enriched.get('source', 'ATF Directory'),
-                    status=DealerStatus.ENRICHED if enriched.get('website') else DealerStatus.DISCOVERED
-                )
-                db.add(db_dealer)
-                activity.dealer_saved(enriched['business_name'])
+            # Update dealer with enriched data
+            if enriched.get('website'):
+                dealer.website = enriched['website']
+                dealer.status = DealerStatus.ENRICHED
+            
+            if enriched.get('email'):
+                dealer.email = enriched['email']
+            
+            if enriched.get('phone'):
+                dealer.phone = enriched['phone']
+            
+            if enriched.get('contact_form_url'):
+                dealer.contact_form_url = enriched['contact_form_url']
+            
+            # Store Class 3 verification results
+            if enriched.get('class3_verified') is not None:
+                dealer.sot_class = 'Class 3 SOT' if enriched['class3_verified'] else 'No Class 3'
+                if not dealer.extra_data:
+                    dealer.extra_data = {}
+                dealer.extra_data['class3_confidence'] = enriched.get('class3_confidence', 0.0)
+                dealer.extra_data['class3_evidence'] = enriched.get('class3_evidence', '')
+                dealer.extra_data['class3_verified_at'] = datetime.now().isoformat()
         
         db.commit()
-        activity.info(f"Import complete for {state}")
+        activity.log('info', f"Import and enrichment complete for {state}")
     
     background_tasks.add_task(import_task)
     

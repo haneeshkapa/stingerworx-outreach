@@ -152,12 +152,17 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-16: **AI-Powered Class 3 SOT Verification**
+  - Built Class3Verifier agent that analyzes dealer websites for Class 3 indicators
+  - Searches for keywords: "Class 3", "SOT", "NFA", "suppressors", "silencers", "SBR"
+  - AI analyzes website content to determine if dealer has Class 3 license
+  - Stores verification confidence score and evidence
+  - System now verifies Class 3 status from web sources (not just ATF data)
 - 2025-11-16: **REAL ATF Dealer List Integration**
   - Uploaded official ATF dealer list with 78,408 total dealers
-  - Filtered for 6,066 Class 3 SOT dealers (SOT Type 2 - NFA/suppressor licenses)
-  - Updated ATF importer to read from Excel file and filter by SOT type
-  - Top states: TX (974), FL (545), GA (426), NC (332)
-  - System now imports verified Class 3 dealers instead of mock data
+  - Imports Type 01/02 FFLs (can get Class 3 SOT) from all states
+  - Updated ATF importer to read from Excel file
+  - System verifies Class 3 status via AI web research (not relying on ATF sot_type alone)
 - 2025-11-16: **AI-Powered Web Crawler Implemented**
   - Created AIBrowserAgent class using OpenAI AI Integrations
   - Multi-strategy search: DuckDuckGo → Google → AI prediction

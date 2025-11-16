@@ -39,10 +39,12 @@ class ATFImporter:
             # Read the Excel file
             df = pd.read_excel(self.atf_file_path)
             
-            # Filter for Class 3 SOT (type 2) dealers in the specified state
+            # Import Type 01 (Dealer) and Type 02 (Pawnbroker) FFLs
+            # These are the ones that can potentially get Class 3 SOT
+            # We'll verify actual Class 3 status via web research
             state_dealers = df[
                 (df['state'] == state_code) & 
-                (df['sot_type'] == 2)
+                (df['sot_type'].isin([1, 2]))  # Type 01 and 02 can get Class 3 SOT
             ]
             
             if len(state_dealers) == 0:

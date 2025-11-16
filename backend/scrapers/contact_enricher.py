@@ -10,15 +10,18 @@ import re
 from typing import Dict, Optional
 import logging
 from scrapers.ai_browser_agent import AIBrowserAgent
+from scrapers.class3_verifier import Class3Verifier
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 class ContactEnricher:
     """Enriches dealer records with website and contact information using AI"""
     
-    def __init__(self):
+    def __init__(self, db: Session = None, tenant_id: int = None):
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
         self.ai_agent = AIBrowserAgent()
+        self.class3_verifier = Class3Verifier(db, tenant_id) if db and tenant_id else None
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
@@ -106,14 +109,16 @@ class ContactEnricher:
         
         return contact_info
     
-    def enrich_dealer(self, dealer: Dict) -> Dict:
+    def enrich_dealer(self, dealer: Dict, verify_class3: bool = True) -> Dict:
         """
-        Enrich a dealer record with website and contact information using AI agent
+        Enrich a dealer record with website and contact information using AI agent.
+        Optionally verify Class 3 SOT status.
         """
         enriched = dealer.copy()
         
         logger.info(f"Enriching dealer with AI: {dealer['business_name']}")
         
+        # Find website and contact info using AI
         contact_data = self.ai_agent.find_dealer_website_and_contacts(
             dealer['business_name'],
             dealer.get('city', ''),
@@ -134,6 +139,29 @@ class ContactEnricher:
         
         if contact_data.get('contact_form_url'):
             enriched['contact_form_url'] = contact_data['contact_form_url']
+        
+        # Verify Class 3 SOT status if requested
+        if verify_class3 and self.class3_verifier:
+            website = enriched.get('website')
+            if website:
+                # Verify from website content
+                class3_result = self.class3_verifier.verify_from_website(
+                    website,
+                    dealer['business_name']
+                )
+            else:
+                # Verify from basic info only
+                class3_result = self.class3_verifier.verify_class3_status(
+                    dealer['business_name'],
+                    dealer.get('city', ''),
+                    dealer.get('state', ''),
+                    None
+                )
+            
+            # Add Class 3 verification data to enriched info
+            enriched['class3_verified'] = class3_result.get('has_class3', False)
+            enriched['class3_confidence'] = class3_result.get('confidence', 0.0)
+            enriched['class3_evidence'] = class3_result.get('evidence', '')
         
         logger.info(f"Enriched dealer: {enriched}")
         return enriched
