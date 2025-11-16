@@ -104,17 +104,14 @@ export default function Dealers() {
 
   return (
     <Container maxW="1600px" py={8}>
-      <Grid templateColumns="3fr 2fr" gap={6} mb={6}>
-        <GridItem>
-          <Heading>Dealer Directory</Heading>
-        </GridItem>
-        <GridItem>
-          <ActivityFeed autoRefresh={true} />
-        </GridItem>
-      </Grid>
+      <Box mb={6}>
+        <Heading>Dealer Directory</Heading>
+      </Box>
       
       <HStack justify="space-between" mb={6}>
-        <Box></Box>
+        <Text fontSize="sm" color="gray.600">
+          {dealers.length} dealers found
+        </Text>
         <Menu>
           <MenuButton as={Button} colorScheme="brand" isLoading={importing}>
             Import Dealers ▾
