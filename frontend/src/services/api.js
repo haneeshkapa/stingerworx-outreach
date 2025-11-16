@@ -5,15 +5,19 @@ const getApiUrl = () => {
   
   const hostname = window.location.hostname
   const protocol = window.location.protocol
+  const port = window.location.port
+  
+  if (hostname.includes('.replit.dev')) {
+    const parts = hostname.split('.')
+    const replId = parts[0]
+    if (port === '5000') {
+      return `${protocol}//${hostname.replace('-5000-', '-8000-')}`
+    }
+    return `${protocol}//${replId}-8000-${parts.slice(1).join('.')}`
+  }
   
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:8000'
-  }
-  
-  const currentUrl = window.location.href
-  if (currentUrl.includes('.replit.dev')) {
-    const baseUrl = currentUrl.split('/')[2]
-    return `${protocol}//${baseUrl}`.replace('-5000-', '-8000-')
   }
   
   return `${protocol}//${hostname}:8000`
