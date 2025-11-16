@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-20"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib"]
+packages = ["gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "copilot-cli"]
 
 [unitTest]
 language = "python3"

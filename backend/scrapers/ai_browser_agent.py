@@ -61,28 +61,47 @@ class AIBrowserAgent:
     
     def search_duckduckgo(self, query: str) -> list[str]:
         """
-        Search DuckDuckGo (more reliable for scraping) and extract URLs.
+        Search DuckDuckGo using JSON API (more reliable) and extract URLs.
         """
         try:
-            search_url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
+            search_url = f"https://api.duckduckgo.com/?q={query.replace(' ', '+')}&format=json"
             response = self.client.get(search_url, timeout=10)
             
+            urls = []
             if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                urls = []
+                data = response.json()
                 
-                results = soup.find_all('a', class_='result__url')
-                for result in results[:5]:
-                    href = result.get('href', '')
-                    if href and href.startswith('http'):
-                        if not any(skip in href.lower() for skip in 
-                            ['duckduckgo.com', 'facebook.com', 'yelp.com', 'yellowpages.com']):
-                            urls.append(href)
+                if data.get('AbstractURL'):
+                    urls.append(data['AbstractURL'])
                 
-                logger.info(f"Found {len(urls)} URLs from DuckDuckGo")
-                return urls
+                for result in data.get('RelatedTopics', [])[:5]:
+                    if isinstance(result, dict) and result.get('FirstURL'):
+                        url = result['FirstURL']
+                        if not any(skip in url.lower() for skip in 
+                            ['wikipedia.org', 'duckduckgo.com', 'facebook.com']):
+                            urls.append(url)
+                
+                logger.info(f"Found {len(urls)} URLs from DuckDuckGo API")
             
-            return []
+            if not urls:
+                logger.info("DuckDuckGo API returned no results, trying lite search")
+                search_url = f"https://lite.duckduckgo.com/lite/?q={query.replace(' ', '+')}"
+                response = self.client.get(search_url, timeout=10)
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    
+                    for link in soup.find_all('a', href=True):
+                        href = link['href']
+                        if href.startswith('http') and not any(skip in href.lower() for skip in 
+                            ['duckduckgo.com', 'facebook.com', 'yelp.com', 'wikipedia.org']):
+                            urls.append(href)
+                            if len(urls) >= 5:
+                                break
+                    
+                    logger.info(f"Found {len(urls)} URLs from DuckDuckGo Lite")
+            
+            return urls[:5]
             
         except Exception as e:
             logger.error(f"DuckDuckGo search error: {e}")
@@ -131,29 +150,32 @@ Extract the following information if available:
 - Physical address (street address, city, state, zip)
 - Contact form URL (if they mention a contact page)
 
-Respond in this exact JSON format:
+Respond with ONLY valid JSON in this exact format (use null without quotes for missing values):
 {{
-    "email": "email@example.com or null",
-    "phone": "123-456-7890 or null",
-    "address": "street address or null",
-    "contact_form_url": "full URL or null"
-}}
-
-Only include information that is clearly present. Use null if not found."""
+    "email": "email@example.com",
+    "phone": "123-456-7890",
+    "address": "street address",
+    "contact_form_url": "full URL"
+}}"""
 
             response = self.openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are an expert at extracting contact information from websites. Always respond with valid JSON."},
+                    {"role": "system", "content": "You are an expert at extracting contact information from websites. Respond ONLY with valid JSON, no markdown, no explanations."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,
-                max_tokens=300
+                max_tokens=300,
+                response_format={"type": "json_object"}
             )
             
-            result = response.choices[0].message.content
+            result = response.choices[0].message.content.strip()
             
             import json
+            
+            if result.startswith('```json'):
+                result = result.replace('```json', '').replace('```', '').strip()
+            
             contact_info = json.loads(result)
             
             logger.info(f"AI extracted contact info from {url}: {contact_info}")
@@ -161,7 +183,46 @@ Only include information that is clearly present. Use null if not found."""
             
         except Exception as e:
             logger.error(f"AI extraction error: {e}")
+            logger.error(f"Response was: {response.choices[0].message.content if 'response' in locals() else 'No response'}")
             return {}
+    
+    def ai_search_for_website(self, business_name: str, city: str, state: str) -> Optional[str]:
+        """
+        Use AI to generate likely website URL based on business name.
+        """
+        try:
+            prompt = f"""Based on the business name, generate the most likely website URL for this gun dealer/firearms business.
+
+Business Name: {business_name}
+City: {city}
+State: {state}
+
+Common patterns for gun dealers:
+- businessname.com
+- citynameguns.com  
+- statearms.com
+- businessnamefirearms.com
+
+Generate the single most likely website URL. Respond with ONLY the URL, nothing else.
+Example format: https://www.example.com"""
+
+            response = self.openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert at predicting business websites. Respond with only a URL."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=50
+            )
+            
+            url = response.choices[0].message.content.strip()
+            logger.info(f"AI predicted website: {url}")
+            return url
+            
+        except Exception as e:
+            logger.error(f"AI URL prediction error: {e}")
+            return None
     
     def find_dealer_website_and_contacts(self, business_name: str, city: str, state: str) -> Dict:
         """
@@ -174,6 +235,12 @@ Only include information that is clearly present. Use null if not found."""
         urls = self.search_duckduckgo(search_query)
         if not urls:
             urls = self.search_google(search_query)
+        
+        if not urls:
+            logger.info(f"No URLs from search, using AI prediction for {business_name}")
+            predicted_url = self.ai_search_for_website(business_name, city, state)
+            if predicted_url:
+                urls = [predicted_url]
         
         if not urls:
             logger.warning(f"No URLs found for {business_name}")

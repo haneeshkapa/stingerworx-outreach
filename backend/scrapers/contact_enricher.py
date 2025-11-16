@@ -1,7 +1,7 @@
 """
 Contact Enrichment Service
 
-Finds website, email, and contact form info for dealers using web search and scraping.
+Finds website, email, and contact form info for dealers using AI-powered web search.
 """
 
 import httpx
@@ -9,14 +9,16 @@ from bs4 import BeautifulSoup
 import re
 from typing import Dict, Optional
 import logging
+from scrapers.ai_browser_agent import AIBrowserAgent
 
 logger = logging.getLogger(__name__)
 
 class ContactEnricher:
-    """Enriches dealer records with website and contact information"""
+    """Enriches dealer records with website and contact information using AI"""
     
     def __init__(self):
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
+        self.ai_agent = AIBrowserAgent()
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
@@ -106,23 +108,34 @@ class ContactEnricher:
     
     def enrich_dealer(self, dealer: Dict) -> Dict:
         """
-        Enrich a dealer record with website and contact information
+        Enrich a dealer record with website and contact information using AI agent
         """
         enriched = dealer.copy()
         
-        if not enriched.get('website'):
-            website = self.find_website(
-                dealer['business_name'],
-                dealer.get('city', ''),
-                dealer.get('state', '')
-            )
-            if website:
-                enriched['website'] = website
+        logger.info(f"Enriching dealer with AI: {dealer['business_name']}")
         
-        if enriched.get('website'):
-            contact_info = self.extract_contact_info(enriched['website'])
-            enriched.update(contact_info)
+        contact_data = self.ai_agent.find_dealer_website_and_contacts(
+            dealer['business_name'],
+            dealer.get('city', ''),
+            dealer.get('state', '')
+        )
         
+        if contact_data.get('website'):
+            enriched['website'] = contact_data['website']
+        
+        if contact_data.get('email'):
+            enriched['email'] = contact_data['email']
+        
+        if contact_data.get('phone'):
+            enriched['phone'] = contact_data['phone']
+        
+        if contact_data.get('address'):
+            enriched['address'] = contact_data['address']
+        
+        if contact_data.get('contact_form_url'):
+            enriched['contact_form_url'] = contact_data['contact_form_url']
+        
+        logger.info(f"Enriched dealer: {enriched}")
         return enriched
 
 
