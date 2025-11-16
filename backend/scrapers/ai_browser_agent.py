@@ -137,7 +137,7 @@ class AIBrowserAgent:
         Use AI to extract contact information from page content.
         """
         try:
-            prompt = f"""Analyze this business website content and extract contact information.
+            prompt = f"""Analyze this Class 3 SOT/NFA firearms dealer website and extract contact information.
 
 URL: {url}
 
@@ -145,10 +145,12 @@ Page Content:
 {page_content[:3000]}
 
 Extract the following information if available:
-- Email address (look for contact@, info@, sales@, etc.)
+- Email address (look for contact@, info@, sales@, nfa@, class3@, etc.)
 - Phone number (look for various formats)
 - Physical address (street address, city, state, zip)
-- Contact form URL (if they mention a contact page)
+- Contact form URL (IMPORTANT: Look for contact form, contact page, or dealer inquiry form)
+
+Priority: Contact forms are preferred over email for reaching dealers.
 
 Respond with ONLY valid JSON in this exact format (use null without quotes for missing values):
 {{
@@ -227,10 +229,11 @@ Example format: https://www.example.com"""
     def find_dealer_website_and_contacts(self, business_name: str, city: str, state: str) -> Dict:
         """
         Main method: Search for dealer, find website, and extract contact info using AI.
+        Specifically targets Class 3 SOT dealers (NFA/suppressor dealers).
         """
-        logger.info(f"AI Agent searching for: {business_name}, {city}, {state}")
+        logger.info(f"AI Agent searching for Class 3 SOT dealer: {business_name}, {city}, {state}")
         
-        search_query = f"{business_name} {city} {state} gun shop firearms"
+        search_query = f"{business_name} {city} {state} Class 3 SOT NFA suppressor dealer firearms"
         
         urls = self.search_duckduckgo(search_query)
         if not urls:

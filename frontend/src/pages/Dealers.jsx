@@ -107,12 +107,57 @@ export default function Dealers() {
           <MenuButton as={Button} colorScheme="brand" isLoading={importing}>
             Import Dealers ▾
           </MenuButton>
-          <MenuList>
-            <MenuItem onClick={() => handleImport('TX')}>Texas</MenuItem>
+          <MenuList maxH="400px" overflowY="auto">
+            <MenuItem onClick={() => handleImport('AL')}>Alabama</MenuItem>
+            <MenuItem onClick={() => handleImport('AK')}>Alaska</MenuItem>
+            <MenuItem onClick={() => handleImport('AZ')}>Arizona</MenuItem>
+            <MenuItem onClick={() => handleImport('AR')}>Arkansas</MenuItem>
+            <MenuItem onClick={() => handleImport('CA')}>California</MenuItem>
+            <MenuItem onClick={() => handleImport('CO')}>Colorado</MenuItem>
+            <MenuItem onClick={() => handleImport('CT')}>Connecticut</MenuItem>
+            <MenuItem onClick={() => handleImport('DE')}>Delaware</MenuItem>
             <MenuItem onClick={() => handleImport('FL')}>Florida</MenuItem>
             <MenuItem onClick={() => handleImport('GA')}>Georgia</MenuItem>
-            <MenuItem onClick={() => handleImport('AZ')}>Arizona</MenuItem>
+            <MenuItem onClick={() => handleImport('HI')}>Hawaii</MenuItem>
+            <MenuItem onClick={() => handleImport('ID')}>Idaho</MenuItem>
+            <MenuItem onClick={() => handleImport('IL')}>Illinois</MenuItem>
+            <MenuItem onClick={() => handleImport('IN')}>Indiana</MenuItem>
+            <MenuItem onClick={() => handleImport('IA')}>Iowa</MenuItem>
+            <MenuItem onClick={() => handleImport('KS')}>Kansas</MenuItem>
+            <MenuItem onClick={() => handleImport('KY')}>Kentucky</MenuItem>
+            <MenuItem onClick={() => handleImport('LA')}>Louisiana</MenuItem>
+            <MenuItem onClick={() => handleImport('ME')}>Maine</MenuItem>
+            <MenuItem onClick={() => handleImport('MD')}>Maryland</MenuItem>
+            <MenuItem onClick={() => handleImport('MA')}>Massachusetts</MenuItem>
+            <MenuItem onClick={() => handleImport('MI')}>Michigan</MenuItem>
+            <MenuItem onClick={() => handleImport('MN')}>Minnesota</MenuItem>
+            <MenuItem onClick={() => handleImport('MS')}>Mississippi</MenuItem>
+            <MenuItem onClick={() => handleImport('MO')}>Missouri</MenuItem>
+            <MenuItem onClick={() => handleImport('MT')}>Montana</MenuItem>
+            <MenuItem onClick={() => handleImport('NE')}>Nebraska</MenuItem>
+            <MenuItem onClick={() => handleImport('NV')}>Nevada</MenuItem>
+            <MenuItem onClick={() => handleImport('NH')}>New Hampshire</MenuItem>
+            <MenuItem onClick={() => handleImport('NJ')}>New Jersey</MenuItem>
+            <MenuItem onClick={() => handleImport('NM')}>New Mexico</MenuItem>
+            <MenuItem onClick={() => handleImport('NY')}>New York</MenuItem>
             <MenuItem onClick={() => handleImport('NC')}>North Carolina</MenuItem>
+            <MenuItem onClick={() => handleImport('ND')}>North Dakota</MenuItem>
+            <MenuItem onClick={() => handleImport('OH')}>Ohio</MenuItem>
+            <MenuItem onClick={() => handleImport('OK')}>Oklahoma</MenuItem>
+            <MenuItem onClick={() => handleImport('OR')}>Oregon</MenuItem>
+            <MenuItem onClick={() => handleImport('PA')}>Pennsylvania</MenuItem>
+            <MenuItem onClick={() => handleImport('RI')}>Rhode Island</MenuItem>
+            <MenuItem onClick={() => handleImport('SC')}>South Carolina</MenuItem>
+            <MenuItem onClick={() => handleImport('SD')}>South Dakota</MenuItem>
+            <MenuItem onClick={() => handleImport('TN')}>Tennessee</MenuItem>
+            <MenuItem onClick={() => handleImport('TX')}>Texas</MenuItem>
+            <MenuItem onClick={() => handleImport('UT')}>Utah</MenuItem>
+            <MenuItem onClick={() => handleImport('VT')}>Vermont</MenuItem>
+            <MenuItem onClick={() => handleImport('VA')}>Virginia</MenuItem>
+            <MenuItem onClick={() => handleImport('WA')}>Washington</MenuItem>
+            <MenuItem onClick={() => handleImport('WV')}>West Virginia</MenuItem>
+            <MenuItem onClick={() => handleImport('WI')}>Wisconsin</MenuItem>
+            <MenuItem onClick={() => handleImport('WY')}>Wyoming</MenuItem>
           </MenuList>
         </Menu>
       </HStack>
