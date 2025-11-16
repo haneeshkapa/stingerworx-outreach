@@ -20,20 +20,37 @@ class ContactEnricher:
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
-        Find dealer website using search
+        Find dealer website using DuckDuckGo search (no API key required)
         
-        In production, this would use Google/Bing API or web scraping.
-        For MVP, we'll simulate the search.
+        This does a real web search to find the dealer's actual website.
         """
         logger.info(f"Searching for website: {business_name}, {city}, {state}")
         
-        search_query = f"{business_name} {city} {state} gun dealer"
-        
-        normalized_name = business_name.lower().replace(' ', '')
-        if 'tactical' in normalized_name or 'arms' in normalized_name:
-            return f"https://www.{normalized_name.replace(' ', '')}.com"
-        
-        return None
+        try:
+            search_query = f"{business_name} {city} {state} gun shop firearms dealer"
+            search_url = f"https://html.duckduckgo.com/html/?q={search_query.replace(' ', '+')}"
+            
+            response = self.client.get(search_url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }, timeout=10)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                results = soup.find_all('a', class_='result__a')
+                for result in results[:3]:
+                    href = result.get('href', '')
+                    if href and not any(skip in href.lower() for skip in ['facebook', 'yelp', 'yellowpages', 'google', 'duckduckgo']):
+                        if 'http' in href:
+                            logger.info(f"Found website: {href}")
+                            return href
+            
+            logger.info(f"No website found for {business_name}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching for website: {e}")
+            return None
     
     def extract_contact_info(self, url: str) -> Dict:
         """
