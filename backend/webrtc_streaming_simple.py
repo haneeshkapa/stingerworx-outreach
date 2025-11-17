@@ -10,11 +10,29 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import time
 
-from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from aiortc import (
+    RTCPeerConnection,
+    RTCSessionDescription,
+    VideoStreamTrack,
+    RTCIceServer,
+    RTCConfiguration,
+)
 from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
 
 logger = logging.getLogger(__name__)
+ICE_SERVERS = RTCConfiguration(iceServers=[
+    RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
+    RTCIceServer(
+        urls=[
+            "turn:openrelay.metered.ca:80",
+            "turn:openrelay.metered.ca:443",
+            "turn:openrelay.metered.ca:443?transport=tcp",
+        ],
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+])
 
 class TestFrameProducer:
     """Generates test pattern frames"""
@@ -109,7 +127,7 @@ class SimpleStreamManager:
         frame_producer = TestFrameProducer(target_fps=15)
         
         # Create WebRTC peer connection
-        pc = RTCPeerConnection()
+        pc = RTCPeerConnection(ICE_SERVERS)
         
         # Add video track
         video_track = SimpleVideoStreamTrack(frame_producer)
