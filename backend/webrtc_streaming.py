@@ -8,6 +8,9 @@ from typing import Optional
 import numpy as np
 from PIL import Image
 import io
+import tempfile
+import shutil
+from pathlib import Path
 from collections import deque
 
 from playwright.async_api import async_playwright, Page, Browser
@@ -16,6 +19,7 @@ from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
 
 logger = logging.getLogger(__name__)
+NOPECHA_EXTENSION_PATH = Path(__file__).resolve().parent / "nopecha-extension" / "dist" / "chrome"
 
 class FrameProducer:
     """
@@ -23,32 +27,63 @@ class FrameProducer:
     Reliable and simple - works in all environments.
     """
     
-    def __init__(self, target_fps: int = 10):
+    def __init__(self, target_fps: int = 10, extension_path: Optional[Path] = None):
         self.target_fps = target_fps
         self.frame_interval = 1.0 / target_fps
         self.browser: Optional[Browser] = None
+        self.context = None
         self.page: Optional[Page] = None
         self.playwright = None
         self.running = False
         self.latest_frame: Optional[bytes] = None
         self.frame_lock = asyncio.Lock()
         self._capture_task = None
+        self.extension_path = extension_path
+        self.user_data_dir: Optional[Path] = None
         
     async def start(self, url: str = "https://www.google.com", headless: bool = True):
         """Start Playwright browser"""
         logger.info(f"🎬 Starting browser stream (headless={headless}, {self.target_fps} FPS)")
         
+        use_extension = False
+        extension_path = self.extension_path or NOPECHA_EXTENSION_PATH
+        if extension_path and extension_path.exists():
+            use_extension = True
+            logger.info(f"🧩 Loading NopeCHA extension from {extension_path}")
+        elif extension_path:
+            logger.warning(f"⚠️ NopeCHA extension path missing: {extension_path}")
+
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=headless,
-            args=[
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-            ]
-        )
-        
-        self.page = await self.browser.new_page(viewport={'width': 1280, 'height': 720})
+        launch_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+        ]
+
+        if use_extension:
+            headless = False  # Chromium extensions need headful mode
+            launch_args.extend([
+                f'--disable-extensions-except={extension_path}',
+                f'--load-extension={extension_path}',
+            ])
+
+            # Persistent context required to load extensions
+            self.user_data_dir = self.user_data_dir or Path(tempfile.mkdtemp(prefix="pw-nopecha-"))
+            self.context = await self.playwright.chromium.launch_persistent_context(
+                user_data_dir=str(self.user_data_dir),
+                headless=headless,
+                args=launch_args,
+                viewport={'width': 1280, 'height': 720},
+            )
+            pages = self.context.pages
+            self.page = pages[0] if pages else await self.context.new_page()
+        else:
+            self.browser = await self.playwright.chromium.launch(
+                headless=headless,
+                args=launch_args,
+            )
+            self.context = await self.browser.new_context(viewport={'width': 1280, 'height': 720})
+            self.page = await self.context.new_page()
         
         # Navigate with timeout
         try:
@@ -101,10 +136,14 @@ class FrameProducer:
         
         if self.page:
             await self.page.close()
+        if self.context:
+            await self.context.close()
         if self.browser:
             await self.browser.close()
         if self.playwright:
             await self.playwright.stop()
+        if self.user_data_dir:
+            shutil.rmtree(self.user_data_dir, ignore_errors=True)
             
         logger.info("🛑 Browser stream stopped")
 
@@ -184,8 +223,12 @@ class BrowserStreamManager:
         logger.info(f"🎥 Creating WebRTC session: {session_id}")
         
         # Create frame producer and start browser
-        frame_producer = FrameProducer(target_fps=10)
-        await frame_producer.start(url="https://www.google.com", headless=headless)
+        extension_path = NOPECHA_EXTENSION_PATH if NOPECHA_EXTENSION_PATH.exists() else None
+        frame_producer = FrameProducer(target_fps=10, extension_path=extension_path)
+        await frame_producer.start(
+            url="https://www.google.com",
+            headless=headless if extension_path is None else False
+        )
         
         # Create WebRTC peer connection
         pc = RTCPeerConnection()
@@ -236,7 +279,53 @@ class BrowserStreamManager:
             await session['pc'].close()
             del self.sessions[session_id]
             logger.info(f"🗑️ Closed session: {session_id}")
-    
+
+    async def crawl_state(self, session_id: str, state_code: str):
+        """
+        Perform a visible crawl step for a state:
+        - Google search for "{state} class 3 sot firearms dealer"
+        - Move mouse around results
+        - Click first organic result if present
+        """
+        session = self.sessions.get(session_id)
+        if not session:
+            raise ValueError("Session not found")
+
+        producer: FrameProducer = session['producer']
+        page = producer.page
+        if not page:
+            raise ValueError("Browser page not ready")
+
+        query = f"{state_code} class 3 sot firearms dealer"
+        logger.info(f"🕷️ Crawling for state {state_code}: {query}")
+        try:
+            await producer.navigate("https://www.google.com")
+            await asyncio.sleep(1)
+            await producer.fill_and_search('textarea[name=\"q\"]', query)
+
+            # Gentle pointer movement to make it visible
+            await page.mouse.move(200, 300, steps=20)
+            await page.mouse.move(900, 500, steps=30)
+            await page.mouse.move(400, 200, steps=15)
+
+            # Scroll a bit
+            await page.mouse.wheel(0, 600)
+            await asyncio.sleep(0.5)
+
+            # Click first organic result if it exists
+            first_result = page.locator('a h3').first
+            if await first_result.count() > 0:
+                box = await first_result.bounding_box()
+                if box:
+                    await page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2, steps=10)
+                await first_result.click(timeout=5000)
+                logger.info("✅ Clicked first search result")
+            else:
+                logger.info("ℹ️ No results found to click")
+        except Exception as e:
+            logger.error(f"crawl_state error: {e}")
+            raise
+
     async def close_all(self):
         """Close all active sessions"""
         for session_id in list(self.sessions.keys()):

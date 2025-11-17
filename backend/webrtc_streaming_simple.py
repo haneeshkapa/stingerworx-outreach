@@ -140,7 +140,15 @@ class SimpleStreamManager:
             if session_id in self.sessions:
                 del self.sessions[session_id]
             logger.info(f"🗑️ Closed session: {session_id}")
-    
+
+    async def navigate_session(self, session_id: str, url: str):
+        """Placeholder to keep API compatible with browser-based streamer"""
+        logger.info(f"🧭 navigate_session called for {session_id} -> {url} (no-op in test streamer)")
+
+    async def search_session(self, session_id: str, query: str):
+        """Placeholder to keep API compatible with browser-based streamer"""
+        logger.info(f"🔍 search_session called for {session_id} -> {query} (no-op in test streamer)")
+
     async def close_all(self):
         """Close all sessions"""
         for session_id in list(self.sessions.keys()):

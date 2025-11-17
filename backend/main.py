@@ -556,9 +556,9 @@ def demo_visible_browser(
         "note": "The VNC viewer should appear automatically in your Replit workspace. Watch the browser navigate in real-time! Check the Logs page to see progress."
     }
 
-# Import WebRTC streaming module (using simple test version)
+# Import WebRTC streaming module (browser-based)
 import logging
-from webrtc_streaming_simple import simple_stream_manager as stream_manager
+from webrtc_streaming import stream_manager
 from aiortc import RTCSessionDescription
 import uuid
 
@@ -623,6 +623,21 @@ async def webrtc_search(session_id: str, request: dict):
         else:
             raise HTTPException(status_code=400, detail="Query required")
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/webrtc/crawl/{session_id}")
+async def webrtc_crawl(session_id: str, request: dict):
+    """Perform a deeper visible crawl for a state (moves mouse, clicks first result)"""
+    try:
+        state = request.get("state")
+        if not state:
+            raise HTTPException(status_code=400, detail="State required")
+        await stream_manager.crawl_state(session_id, state)
+        return {"status": "crawling", "state": state}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"crawl error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/webrtc/session/{session_id}")

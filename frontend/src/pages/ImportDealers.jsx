@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box,
   Container,
@@ -14,10 +14,13 @@ import {
   useToast,
   Icon,
   Divider,
+  Flex,
+  Spinner,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { FaCheckCircle } from 'react-icons/fa'
 import { dealersApi } from '../services/api'
+import api from '../services/api'
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -75,12 +78,112 @@ const US_STATES = [
 export default function ImportDealers() {
   const [importing, setImporting] = useState({})
   const [imported, setImported] = useState({})
+  const [sessionId, setSessionId] = useState(null)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [connectionState, setConnectionState] = useState('new')
+  const videoRef = useRef(null)
+  const peerConnectionRef = useRef(null)
   const toast = useToast()
   const navigate = useNavigate()
+
+  const ensureStreamStarted = async () => {
+    if (sessionId) return sessionId
+
+    try {
+      setIsStreaming(true)
+      toast({
+        title: 'Starting live stream...',
+        status: 'info',
+        duration: 2000,
+      })
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      })
+      peerConnectionRef.current = pc
+
+      pc.oniceconnectionstatechange = () => {
+        setConnectionState(pc.connectionState)
+      }
+
+      pc.ontrack = (event) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = event.streams[0]
+        }
+      }
+
+      // Receive-only video
+      pc.addTransceiver('video', { direction: 'recvonly' })
+
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+
+      await new Promise((resolve) => {
+        if (pc.iceGatheringState === 'complete') {
+          resolve()
+        } else {
+          const checkState = () => {
+            if (pc.iceGatheringState === 'complete') {
+              pc.removeEventListener('icegatheringstatechange', checkState)
+              resolve()
+            }
+          }
+          pc.addEventListener('icegatheringstatechange', checkState)
+        }
+      })
+
+      const response = await api.post('/api/webrtc/offer', {
+        sdp: pc.localDescription.sdp,
+        type: pc.localDescription.type
+      })
+
+      await pc.setRemoteDescription(new RTCSessionDescription({
+        sdp: response.data.sdp,
+        type: response.data.type
+      }))
+
+      setSessionId(response.data.session_id)
+      toast({
+        title: 'Live stream ready',
+        status: 'success',
+        duration: 2000,
+      })
+      return response.data.session_id
+    } catch (error) {
+      console.error('Stream error:', error)
+      toast({
+        title: 'Stream error',
+        description: error.message,
+        status: 'error',
+        duration: 4000,
+      })
+      setIsStreaming(false)
+    }
+
+    return null
+  }
+
+  const stopStream = async () => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close()
+      peerConnectionRef.current = null
+    }
+    if (sessionId) {
+      try {
+        await api.delete(`/api/webrtc/session/${sessionId}`)
+      } catch (error) {
+        console.error('Error closing session:', error)
+      }
+    }
+    setIsStreaming(false)
+    setSessionId(null)
+    setConnectionState('new')
+  }
 
   const handleImport = async (stateCode) => {
     setImporting(prev => ({ ...prev, [stateCode]: true }))
     try {
+      const activeSessionId = await ensureStreamStarted()
       await dealersApi.importFromState(stateCode)
       setImported(prev => ({ ...prev, [stateCode]: true }))
       toast({
@@ -89,6 +192,14 @@ export default function ImportDealers() {
         status: 'success',
         duration: 4000,
       })
+
+      const sid = activeSessionId || sessionId
+      if (sid) {
+        const query = `${stateCode} class 3 sot firearms dealer`
+        await api.post(`/api/webrtc/search/${sid}`, { query })
+        // Kick a deeper crawl to move the mouse and click first result
+        await api.post(`/api/webrtc/crawl/${sid}`, { state: stateCode })
+      }
     } catch (error) {
       console.error('Error importing:', error)
       toast({
@@ -101,6 +212,13 @@ export default function ImportDealers() {
       setImporting(prev => ({ ...prev, [stateCode]: false }))
     }
   }
+
+  useEffect(() => {
+    return () => {
+      stopStream()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <Container maxW="1400px" py={8}>
@@ -137,6 +255,42 @@ export default function ImportDealers() {
                 </Box>
               </HStack>
             </VStack>
+          </CardBody>
+        </Card>
+
+        <Divider />
+
+        <Card>
+          <CardBody>
+            <HStack justify="space-between" align="center" mb={3}>
+              <Heading size="md">Live Stream (watch crawling)</Heading>
+              <HStack spacing={2}>
+                <Badge colorScheme={connectionState === 'connected' ? 'green' : connectionState === 'connecting' ? 'yellow' : 'gray'}>
+                  {connectionState}
+                </Badge>
+                <Button size="sm" onClick={isStreaming ? stopStream : ensureStreamStarted} colorScheme={isStreaming ? 'red' : 'blue'}>
+                  {isStreaming ? 'Stop Stream' : 'Start Stream'}
+                </Button>
+              </HStack>
+            </HStack>
+            <Box position="relative" borderRadius="md" overflow="hidden" bg="black" minH="320px">
+              {!isStreaming && (
+                <Flex position="absolute" inset={0} align="center" justify="center" bg="blackAlpha.600" zIndex={1} direction="column">
+                  <Spinner size="lg" color="white" mb={2} />
+                  <Text color="white">Start stream to watch crawling</Text>
+                </Flex>
+              )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: '100%', height: '100%', background: 'black' }}
+              />
+            </Box>
+            <Text fontSize="sm" color="gray.600" mt={2}>
+              Selecting a state will start the live stream and trigger a Google search for that state&apos;s dealers so you can watch the automation.
+            </Text>
           </CardBody>
         </Card>
 
