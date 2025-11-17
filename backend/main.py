@@ -557,9 +557,12 @@ def demo_visible_browser(
     }
 
 # Import WebRTC streaming module
+import logging
 from webrtc_streaming import stream_manager
 from aiortc import RTCSessionDescription
 import uuid
+
+logger = logging.getLogger(__name__)
 
 @app.post("/api/webrtc/offer")
 async def webrtc_offer(request: dict):
