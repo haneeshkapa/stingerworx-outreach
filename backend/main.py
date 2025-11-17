@@ -208,6 +208,73 @@ def import_dealers_from_state(
     
     return {"message": f"Import started for {state}", "state": state}
 
+@app.post("/api/dealers/re-enrich")
+def re_enrich_all_dealers(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_current_tenant_id)
+):
+    """Re-enrich all dealers with updated AI (fixes Wikipedia bug, etc.)"""
+    from scrapers.contact_enricher import ContactEnricher
+    
+    def re_enrich_task():
+        from scrapers.activity_logger import ActivityLogger
+        enricher = ContactEnricher(db, tenant_id)
+        activity = ActivityLogger(db, tenant_id)
+        
+        # Get all dealers that have been enriched
+        dealers = db.query(Dealer).filter(
+            Dealer.tenant_id == tenant_id,
+            Dealer.status.in_([DealerStatus.ENRICHED, DealerStatus.DISCOVERED])
+        ).all()
+        
+        activity.log('info', f'Re-enriching {len(dealers)} dealers with fixed AI')
+        
+        # Re-enrich each dealer
+        for dealer in dealers:
+            activity.log('dealer_search', f'Re-enriching {dealer.business_name}', dealer_name=dealer.business_name)
+            
+            dealer_dict = {
+                'business_name': dealer.business_name,
+                'city': dealer.city,
+                'state': dealer.state
+            }
+            
+            # Enrich with AI (includes Class 3 verification)
+            enriched = enricher.enrich_dealer(dealer_dict, verify_class3=True)
+            
+            # Update dealer with enriched data
+            if enriched.get('website'):
+                dealer.website = enriched['website']
+                dealer.status = DealerStatus.ENRICHED
+            
+            if enriched.get('email'):
+                dealer.email = enriched['email']
+            
+            if enriched.get('phone'):
+                dealer.phone = enriched['phone']
+            
+            if enriched.get('contact_form_url'):
+                dealer.contact_form_url = enriched['contact_form_url']
+            
+            # Store Class 3 verification results
+            if enriched.get('class3_verified') is not None:
+                dealer.sot_class = 'Class 3 SOT' if enriched['class3_verified'] else 'No Class 3'
+                if not dealer.extra_data:
+                    dealer.extra_data = {}
+                dealer.extra_data['class3_confidence'] = enriched.get('class3_confidence', 0.0)
+                dealer.extra_data['class3_evidence'] = enriched.get('class3_evidence', '')
+                dealer.extra_data['class3_verified_at'] = datetime.now().isoformat()
+            
+            # Commit after each dealer to avoid losing progress
+            db.commit()
+        
+        activity.log('info', f"Re-enrichment complete for {len(dealers)} dealers")
+    
+    background_tasks.add_task(re_enrich_task)
+    
+    return {"message": "Re-enrichment started for all dealers"}
+
 @app.get("/api/outreach", response_model=List[OutreachResponse])
 def get_outreach_attempts(
     skip: int = 0,
