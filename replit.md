@@ -20,7 +20,8 @@ AI-driven multi-tenant SaaS platform for automated dealer discovery and outreach
 ✅ **Contact Information Extraction** - Email, phone, address extraction from pages  
 ✅ **Class 3 SOT Verification** - AI analyzes dealer websites for NFA license indicators  
 ✅ **Real-Time Activity Feed** - Live monitoring of enrichment progress  
-✅ **Live Logs Viewer** - Terminal-style real-time workflow monitoring
+✅ **Live Logs Viewer** - Terminal-style real-time workflow monitoring  
+✅ **WebRTC Browser Streaming** - Live video stream of browser automation using aiortc (10 FPS @ 720p)
 
 ### In Progress
 🔄 Contact form automation with Playwright  
@@ -155,6 +156,15 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-17: **WebRTC Browser Streaming Implemented**
+  - Built complete WebRTC video streaming system using aiortc for real-time browser automation viewing
+  - Created webrtc_streaming.py module with FrameProducer, BrowserVideoStreamTrack, and BrowserStreamManager classes
+  - Added FastAPI signaling endpoints: /api/webrtc/offer, /api/webrtc/search, /api/webrtc/session (DELETE)
+  - Implemented React BrowserStream component with RTCPeerConnection for WebRTC client
+  - Streams Playwright browser viewport at 10 FPS @ 720p resolution
+  - Supports live Google searches and URL navigation within video stream
+  - Installed system dependencies: ffmpeg, libvpx, libopus, aiortc, av, numpy
+  - Added "Live Stream" navigation link and dedicated /browser-stream page
 - 2025-11-17: **Crawl4AI Successfully Integrated with Chromium**
   - Added system dependencies (chromium, mesa, libgbm) to replit.nix
   - Fixed Crawl4AI API compatibility issues (removed invalid CrawlerRunConfig parameters)
