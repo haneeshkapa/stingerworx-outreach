@@ -19,6 +19,9 @@ export default function Navbar() {
             <Button as={RouterLink} to="/campaigns" variant="ghost" colorScheme="brand">
               Campaigns
             </Button>
+            <Button as={RouterLink} to="/browser-stream" variant="ghost" colorScheme="brand">
+              Live Stream
+            </Button>
             <Button as={RouterLink} to="/logs" variant="ghost" colorScheme="brand">
               Logs
             </Button>

@@ -6,6 +6,7 @@ import DealerPipeline from './pages/DealerPipeline'
 import ImportDealers from './pages/ImportDealers'
 import Campaigns from './pages/Campaigns'
 import Logs from './pages/Logs'
+import BrowserStream from './pages/BrowserStream'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/dealers/import" element={<ImportDealers />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/logs" element={<Logs />} />
+          <Route path="/browser-stream" element={<BrowserStream />} />
         </Routes>
       </Box>
     </Router>

@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
+import asyncio
+import base64
 
 from database import engine, get_db, Base
 from models import Tenant, User, Dealer, MessageTemplate, OutreachAttempt, DealerStatus, OutreachStatus, ActivityLog, ActivityType
@@ -553,6 +555,86 @@ def demo_visible_browser(
         "status": "running",
         "note": "The VNC viewer should appear automatically in your Replit workspace. Watch the browser navigate in real-time! Check the Logs page to see progress."
     }
+
+# Import WebRTC streaming module
+from webrtc_streaming import stream_manager
+from aiortc import RTCSessionDescription
+import uuid
+
+@app.post("/api/webrtc/offer")
+async def webrtc_offer(request: dict):
+    """
+    WebRTC signaling endpoint - receives offer from client, returns answer.
+    Creates new browser streaming session and sets up peer connection.
+    """
+    try:
+        # Parse offer
+        offer = RTCSessionDescription(sdp=request["sdp"], type=request["type"])
+        session_id = str(uuid.uuid4())
+        
+        logger.info(f"📡 Received WebRTC offer for session {session_id}")
+        
+        # Create new streaming session
+        pc = await stream_manager.create_session(session_id, headless=True)
+        
+        # Set remote description (offer)
+        await pc.setRemoteDescription(offer)
+        
+        # Create answer
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        
+        logger.info(f"✅ WebRTC answer created for session {session_id}")
+        
+        return {
+            "sdp": pc.localDescription.sdp,
+            "type": pc.localDescription.type,
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ WebRTC offer error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/webrtc/navigate/{session_id}")
+async def webrtc_navigate(session_id: str, request: dict):
+    """Navigate browser in WebRTC session"""
+    try:
+        url = request.get("url")
+        if url:
+            await stream_manager.navigate_session(session_id, url)
+            return {"status": "navigated", "url": url}
+        else:
+            raise HTTPException(status_code=400, detail="URL required")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/webrtc/search/{session_id}")
+async def webrtc_search(session_id: str, request: dict):
+    """Perform Google search in WebRTC session"""
+    try:
+        query = request.get("query")
+        if query:
+            await stream_manager.search_session(session_id, query)
+            return {"status": "searching", "query": query}
+        else:
+            raise HTTPException(status_code=400, detail="Query required")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/webrtc/session/{session_id}")
+async def webrtc_close_session(session_id: str):
+    """Close WebRTC streaming session"""
+    try:
+        await stream_manager.close_session(session_id)
+        return {"status": "closed", "session_id": session_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup all WebRTC sessions on shutdown"""
+    await stream_manager.close_all()
 
 if __name__ == "__main__":
     import uvicorn

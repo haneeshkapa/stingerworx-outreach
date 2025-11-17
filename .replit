@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-20", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["copilot-cli", "gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "chromium", "xorg.libxcb", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "alsa-lib", "mesa", "nss", "nspr", "dbus", "atk", "at-spi2-atk", "cups", "libxkbcommon", "pango", "cairo", "driversi686Linux.mesa", "libgbm", "tigervnc", "xfce.xfce4-session", "xfce.xfce4-panel", "xfce.xfwm4", "xfce.xfdesktop", "xterm", "fluxbox", "xorg.xinit", "xorg.xorgserver", "xorg.xauth"]
+packages = ["alsa-lib", "at-spi2-atk", "atk", "cairo", "chromium", "copilot-cli", "cups", "dbus", "driversi686Linux.mesa", "ffmpeg", "ffmpeg-full", "fluxbox", "freetype", "gitFull", "glibcLocales", "lcms2", "libgbm", "libimagequant", "libjpeg", "libopus", "libtiff", "libvpx", "libwebp", "libxcrypt", "libxkbcommon", "mesa", "nspr", "nss", "openjpeg", "pango", "pkg-config", "playwright-driver", "tcl", "tigervnc", "tk", "xcodebuild", "xfce.xfce4-panel", "xfce.xfce4-session", "xfce.xfdesktop", "xfce.xfwm4", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "xorg.libxcb", "xorg.xauth", "xorg.xinit", "xorg.xorgserver", "xterm", "zlib"]
 
 [unitTest]
 language = "python3"
@@ -89,6 +89,10 @@ externalPort = 8000
 [[ports]]
 localPort = 35419
 externalPort = 3002
+
+[[ports]]
+localPort = 36163
+externalPort = 5000
 
 [[ports]]
 localPort = 38139
