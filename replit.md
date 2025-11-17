@@ -154,6 +154,17 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-17: **Crawl4AI Successfully Integrated with Chromium**
+  - Added system dependencies (chromium, mesa, libgbm) to replit.nix
+  - Fixed Crawl4AI API compatibility issues (removed invalid CrawlerRunConfig parameters)
+  - Verified browser automation working: Chromium launches, searches Google, scrapes dealer websites
+  - System now finding real dealer websites (e.g., 5shotfirearms.com, 520tactical.com)
+- 2025-11-17: **Enhanced Dealer Pipeline UI**
+  - Added Class 3 SOT badges with AI confidence scores on dealer cards
+  - Added contact info badges (Email, Phone, Contact Page) with hover tooltips
+  - Created dealer detail modal showing class3_evidence and full enrichment data
+  - Improved activity sidebar: filters irrelevant URLs, groups events by dealer with collapsible timelines
+  - Fixed critical bug: Proper number parsing for confidence scores (handles strings/null/zero)
 - 2025-11-16: **Complete UI/UX Redesign of Dealer Management**
   - Created dedicated `/dealers/import` page for importing dealers from ATF database
   - Redesigned main `/dealers` page as pipeline-based view with tabs:
