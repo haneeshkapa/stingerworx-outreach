@@ -8,9 +8,13 @@ import {
   HStack,
   Button,
   Badge,
-  useToast
+  useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription
 } from '@chakra-ui/react'
-import { FiRefreshCw, FiPlay, FiPause } from 'react-icons/fi'
+import { FiRefreshCw, FiPlay, FiPause, FiMonitor } from 'react-icons/fi'
 import api from '../services/api'
 
 function Logs() {
@@ -18,6 +22,7 @@ function Logs() {
   const [logInfo, setLogInfo] = useState(null)
   const [isAutoRefresh, setIsAutoRefresh] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const toast = useToast()
 
   const fetchLogs = async () => {
@@ -60,6 +65,32 @@ function Logs() {
     setIsAutoRefresh(!isAutoRefresh)
   }
 
+  const handleWatchBrowserLive = async () => {
+    try {
+      setDemoLoading(true)
+      const response = await api.post('/api/demo-browser?dealer_name=5 SHOT FIREARMS')
+      
+      toast({
+        title: '🎬 Browser Demo Started!',
+        description: response.data.note || 'The VNC viewer should appear automatically. Watch the browser navigate in real-time!',
+        status: 'success',
+        duration: 8000,
+        isClosable: true,
+      })
+    } catch (error) {
+      console.error('Failed to start browser demo:', error)
+      toast({
+        title: 'Error starting demo',
+        description: error.response?.data?.error || error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={6} align="stretch">
@@ -93,6 +124,26 @@ function Logs() {
             </Button>
           </HStack>
         </HStack>
+
+        <Alert status="info" borderRadius="md">
+          <AlertIcon />
+          <Box flex="1">
+            <AlertTitle>Watch Browser Automation Live!</AlertTitle>
+            <AlertDescription>
+              Click the button below to launch Chromium in visible mode. The VNC viewer will automatically appear in your Replit workspace so you can watch it navigate websites in real-time.
+            </AlertDescription>
+          </Box>
+          <Button
+            colorScheme="purple"
+            leftIcon={<FiMonitor />}
+            onClick={handleWatchBrowserLive}
+            isLoading={demoLoading}
+            loadingText="Launching..."
+            size="md"
+          >
+            Watch Browser Live (VNC)
+          </Button>
+        </Alert>
 
         {logInfo && (
           <HStack spacing={4} fontSize="sm" color="gray.600">
