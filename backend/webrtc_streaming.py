@@ -35,7 +35,7 @@ class FrameProducer:
         self._capture_task = None
         
     async def start(self, url: str = "https://www.google.com", headless: bool = True):
-        """Start Playwright browser and begin frame capture"""
+        """Start Playwright browser"""
         logger.info(f"🎬 Starting browser stream (headless={headless}, {self.target_fps} FPS)")
         
         self.playwright = await async_playwright().start()
@@ -49,34 +49,35 @@ class FrameProducer:
         )
         
         self.page = await self.browser.new_page(viewport={'width': 1280, 'height': 720})
-        await self.page.goto(url)
+        
+        # Navigate with timeout
+        try:
+            await asyncio.wait_for(
+                self.page.goto(url, wait_until="domcontentloaded"),
+                timeout=10.0
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Navigation timeout, continuing anyway")
         
         self.running = True
-        
-        # Start background frame capture task
-        self._capture_task = asyncio.create_task(self._capture_loop())
-        
-        logger.info(f"✅ Browser stream started at {url}")
-        
-    async def _capture_loop(self):
-        """Background task that continuously captures frames"""
-        while self.running:
-            try:
-                frame_bytes = await self.page.screenshot(type='jpeg', quality=75)
-                
-                async with self.frame_lock:
-                    self.latest_frame = frame_bytes
-                
-                await asyncio.sleep(self.frame_interval)
-            except Exception as e:
-                if self.running:
-                    logger.error(f"Frame capture error: {e}")
-                break
+        logger.info(f"✅ Browser stream started")
     
     async def get_latest_frame(self) -> Optional[bytes]:
-        """Get the most recent frame"""
-        async with self.frame_lock:
-            return self.latest_frame
+        """Capture and return a frame on-demand"""
+        if not self.page or not self.running:
+            return None
+        
+        try:
+            frame_bytes = await asyncio.wait_for(
+                self.page.screenshot(type='jpeg', quality=75),
+                timeout=2.0
+            )
+            async with self.frame_lock:
+                self.latest_frame = frame_bytes
+            return frame_bytes
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.error(f"Frame capture error: {e}")
+            return self.latest_frame  # Return last known frame
     
     async def navigate(self, url: str):
         """Navigate browser to new URL"""
@@ -97,12 +98,6 @@ class FrameProducer:
     async def stop(self):
         """Stop browser and cleanup"""
         self.running = False
-        
-        if self._capture_task:
-            try:
-                await asyncio.wait_for(self._capture_task, timeout=2.0)
-            except asyncio.TimeoutError:
-                self._capture_task.cancel()
         
         if self.page:
             await self.page.close()
@@ -191,9 +186,6 @@ class BrowserStreamManager:
         # Create frame producer and start browser
         frame_producer = FrameProducer(target_fps=10)
         await frame_producer.start(url="https://www.google.com", headless=headless)
-        
-        # Give browser time to load
-        await asyncio.sleep(2)
         
         # Create WebRTC peer connection
         pc = RTCPeerConnection()

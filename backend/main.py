@@ -556,9 +556,9 @@ def demo_visible_browser(
         "note": "The VNC viewer should appear automatically in your Replit workspace. Watch the browser navigate in real-time! Check the Logs page to see progress."
     }
 
-# Import WebRTC streaming module
+# Import WebRTC streaming module (using simple test version)
 import logging
-from webrtc_streaming import stream_manager
+from webrtc_streaming_simple import simple_stream_manager as stream_manager
 from aiortc import RTCSessionDescription
 import uuid
 
@@ -577,8 +577,8 @@ async def webrtc_offer(request: dict):
         
         logger.info(f"📡 Received WebRTC offer for session {session_id}")
         
-        # Create new streaming session
-        pc = await stream_manager.create_session(session_id, headless=True)
+        # Create new streaming session (test pattern)
+        pc = await stream_manager.create_session(session_id)
         
         # Set remote description (offer)
         await pc.setRemoteDescription(offer)
