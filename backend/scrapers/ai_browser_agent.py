@@ -226,10 +226,26 @@ Example format: https://www.example.com"""
             logger.error(f"AI URL prediction error: {e}")
             return None
     
+    def validate_url(self, url: str) -> bool:
+        """
+        Validate that a URL actually exists and responds with 200 OK.
+        """
+        try:
+            response = self.client.head(url, timeout=10)
+            if response.status_code == 200:
+                return True
+            
+            response = self.client.get(url, timeout=10)
+            return response.status_code == 200
+        except Exception as e:
+            logger.warning(f"URL validation failed for {url}: {e}")
+            return False
+    
     def find_dealer_website_and_contacts(self, business_name: str, city: str, state: str) -> Dict:
         """
         Main method: Search for dealer, find website, and extract contact info using AI.
         Specifically targets Class 3 SOT dealers (NFA/suppressor dealers).
+        ONLY uses real search results - NO AI predictions/guesses!
         """
         logger.info(f"AI Agent searching for Class 3 SOT dealer: {business_name}, {city}, {state}")
         
@@ -240,13 +256,7 @@ Example format: https://www.example.com"""
             urls = self.search_google(search_query)
         
         if not urls:
-            logger.info(f"No URLs from search, using AI prediction for {business_name}")
-            predicted_url = self.ai_search_for_website(business_name, city, state)
-            if predicted_url:
-                urls = [predicted_url]
-        
-        if not urls:
-            logger.warning(f"No URLs found for {business_name}")
+            logger.warning(f"No URLs found for {business_name} - search returned no results")
             return {
                 'website': None,
                 'email': None,
@@ -255,13 +265,35 @@ Example format: https://www.example.com"""
                 'contact_form_url': None
             }
         
-        website_url = urls[0]
-        logger.info(f"Found website: {website_url}")
+        # Try each URL and validate it actually works
+        working_url = None
+        for url in urls[:3]:
+            logger.info(f"Validating URL: {url}")
+            if self.validate_url(url):
+                working_url = url
+                logger.info(f"✅ Validated working URL: {url}")
+                break
+            else:
+                logger.warning(f"❌ URL validation failed: {url}")
+        
+        if not working_url:
+            logger.warning(f"No working URLs found for {business_name}")
+            return {
+                'website': None,
+                'email': None,
+                'phone': None,
+                'address': None,
+                'contact_form_url': None
+            }
+        
+        website_url = working_url
+        logger.info(f"Using validated website: {website_url}")
         
         page_content = self.fetch_page_content(website_url)
         if not page_content:
+            logger.warning(f"Could not fetch content from {website_url}")
             return {
-                'website': website_url,
+                'website': None,
                 'email': None,
                 'phone': None,
                 'address': None,
