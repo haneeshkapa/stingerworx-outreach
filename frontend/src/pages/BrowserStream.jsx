@@ -76,6 +76,9 @@ function BrowserStream() {
         }
       }
 
+      // CRITICAL: Add transceiver to receive video (fixes aiortc "None is not in list" error)
+      pc.addTransceiver('video', { direction: 'recvonly' })
+
       // Create offer
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
