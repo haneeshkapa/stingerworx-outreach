@@ -11,20 +11,19 @@ from typing import Dict, Optional
 import logging
 from scrapers.ai_browser_agent import AIBrowserAgent
 from scrapers.class3_verifier import Class3Verifier
-from scrapers.http_search import HTTPSearch
+from scrapers.crawl4ai_search import run_async_search
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 class ContactEnricher:
-    """Enriches dealer records with website and contact information using HTTP search"""
+    """Enriches dealer records with website and contact information using Crawl4AI"""
     
     def __init__(self, db: Session = None, tenant_id: int = None):
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
-        self.http_searcher = HTTPSearch()  # Simple HTTP-based search (no browser needed)
         self.ai_agent = AIBrowserAgent()  # Keep for legacy support
         self.class3_verifier = Class3Verifier(db, tenant_id) if db and tenant_id else None
-        self.use_http_search = True  # Use simple HTTP search instead of browser automation
+        self.use_crawl4ai = True  # Use Crawl4AI with Chromium browser automation
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
@@ -119,17 +118,42 @@ class ContactEnricher:
         """
         enriched = dealer.copy()
         
-        logger.info(f"Enriching dealer with HTTP search: {dealer['business_name']}")
+        logger.info(f"Enriching dealer with Crawl4AI: {dealer['business_name']}")
         
-        # Find website and contact info using simple HTTP search (no browser needed)
-        if self.use_http_search:
-            contact_data = self.http_searcher.find_dealer_website(
+        # Find website and contact info using Crawl4AI (browser automation)
+        if self.use_crawl4ai:
+            search_result = run_async_search(
                 dealer['business_name'],
                 dealer.get('city', ''),
                 dealer.get('state', '')
             )
             
-            if not contact_data:
+            if search_result:
+                markdown = search_result.get('markdown', '')
+                
+                # Extract contact info from markdown using regex
+                contact_data = {
+                    'website': search_result.get('url'),
+                    'email': None,
+                    'phone': None,
+                    'address': None,
+                    'contact_form_url': None,
+                    'html_snippet': markdown[:1000]  # For Class 3 verification
+                }
+                
+                # Extract email
+                emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', markdown)
+                if emails:
+                    # Filter out common non-contact emails
+                    valid_emails = [e for e in emails if not any(skip in e.lower() for skip in ['example.com', 'sentry.io'])]
+                    if valid_emails:
+                        contact_data['email'] = valid_emails[0]
+                
+                # Extract phone
+                phones = re.findall(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b', markdown)
+                if phones:
+                    contact_data['phone'] = phones[0]
+            else:
                 contact_data = {
                     'website': None,
                     'email': None,

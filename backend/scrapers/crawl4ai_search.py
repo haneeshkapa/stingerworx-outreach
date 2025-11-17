@@ -38,9 +38,7 @@ class Crawl4AISearch:
                 result = await crawler.arun(
                     search_url,
                     config=CrawlerRunConfig(
-                        cache_mode="bypass",
-                        wait_for_selector="div#search",
-                        wait_for_timeout=5000
+                        cache_mode="bypass"
                     )
                 )
                 
@@ -83,8 +81,7 @@ class Crawl4AISearch:
                 result = await crawler.arun(
                     url,
                     config=CrawlerRunConfig(
-                        cache_mode="bypass",
-                        wait_for_timeout=5000
+                        cache_mode="bypass"
                     )
                 )
                 

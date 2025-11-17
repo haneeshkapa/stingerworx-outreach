@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-20", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["copilot-cli", "gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "chromium", "xorg.libxcb", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "alsa-lib", "mesa", "nss", "nspr", "dbus", "atk", "at-spi2-atk", "cups", "libxkbcommon", "pango", "cairo"]
+packages = ["copilot-cli", "gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "chromium", "xorg.libxcb", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "alsa-lib", "mesa", "nss", "nspr", "dbus", "atk", "at-spi2-atk", "cups", "libxkbcommon", "pango", "cairo", "chromium", "driversi686Linux.mesa", "libgbm"]
 
 [unitTest]
 language = "python3"
@@ -70,6 +70,10 @@ externalPort = 3003
 [[ports]]
 localPort = 8000
 externalPort = 8000
+
+[[ports]]
+localPort = 35297
+externalPort = 4200
 
 [[ports]]
 localPort = 35419

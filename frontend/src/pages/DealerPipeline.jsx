@@ -28,8 +28,28 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
+  Tooltip,
+  Wrap,
+  WrapItem,
+  Link,
+  IconButton,
+  useDisclosure,
 } from '@chakra-ui/react'
-import { FaSearch, FaExternalLinkAlt } from 'react-icons/fa'
+import { FaSearch, FaExternalLinkAlt, FaEnvelope, FaPhone, FaWpforms, FaInfoCircle } from 'react-icons/fa'
+import { 
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Divider,
+  Table,
+  Tbody,
+  Tr,
+  Td,
+  Code,
+} from '@chakra-ui/react'
 import { dealersApi } from '../services/api'
 import { useNavigate } from 'react-router-dom'
 import ActivitySidebar from '../components/ActivitySidebar'
@@ -260,6 +280,8 @@ export default function DealerPipeline() {
 }
 
 function DealerGrid({ dealers, getStatusBadge }) {
+  const [selectedDealer, setSelectedDealer] = useState(null)
+  
   if (dealers.length === 0) {
     return (
       <Center h="300px">
@@ -268,54 +290,268 @@ function DealerGrid({ dealers, getStatusBadge }) {
     )
   }
 
+  const getConfidence = (dealer) => {
+    try {
+      const extraData = typeof dealer.extra_data === 'string' 
+        ? JSON.parse(dealer.extra_data) 
+        : dealer.extra_data
+      const rawConfidence = extraData?.class3_confidence
+      if (rawConfidence === null || rawConfidence === undefined) return null
+      const numConfidence = Number(rawConfidence)
+      return Number.isNaN(numConfidence) ? null : numConfidence
+    } catch {
+      return null
+    }
+  }
+
   return (
-    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-      {dealers.slice(0, 100).map((dealer) => (
-        <Card key={dealer.id} size="sm">
-          <CardBody>
-            <VStack align="stretch" spacing={2}>
-              <HStack justify="space-between">
-                <Text fontWeight="bold" fontSize="md">
-                  {dealer.business_name}
-                </Text>
-                {getStatusBadge(dealer)}
+    <>
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+        {dealers.slice(0, 100).map((dealer) => {
+          const confidence = getConfidence(dealer)
+          
+          return (
+            <Card 
+              key={dealer.id} 
+              size="sm"
+              cursor="pointer"
+              _hover={{ shadow: 'md', borderColor: 'brand.300' }}
+              onClick={() => setSelectedDealer(dealer)}
+            >
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="start">
+                    <VStack align="start" spacing={1} flex={1}>
+                      <Text fontWeight="bold" fontSize="md">
+                        {dealer.business_name}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        📍 {dealer.city}, {dealer.state}
+                      </Text>
+                    </VStack>
+                    <Tooltip label="Click for details">
+                      <IconButton
+                        icon={<FaInfoCircle />}
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="gray"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedDealer(dealer)
+                        }}
+                      />
+                    </Tooltip>
+                  </HStack>
+
+                  <Wrap spacing={2}>
+                    {getStatusBadge(dealer)}
+                    
+                    {dealer.sot_class && dealer.sot_class !== 'Unknown' && (
+                      <WrapItem>
+                        <Tooltip label={`AI Confidence: ${confidence !== null ? confidence.toFixed(0) + '%' : 'N/A'}`}>
+                          <Badge 
+                            colorScheme={dealer.sot_class === 'Class 3 SOT' ? 'green' : 'orange'}
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            {dealer.sot_class === 'Class 3 SOT' ? '✓' : '✗'} Class 3
+                            {confidence !== null && ` ${confidence.toFixed(0)}%`}
+                          </Badge>
+                        </Tooltip>
+                      </WrapItem>
+                    )}
+                    
+                    {dealer.email && (
+                      <WrapItem>
+                        <Tooltip label={dealer.email}>
+                          <Badge colorScheme="blue" display="flex" alignItems="center" gap={1}>
+                            <FaEnvelope /> Email
+                          </Badge>
+                        </Tooltip>
+                      </WrapItem>
+                    )}
+                    
+                    {dealer.phone && (
+                      <WrapItem>
+                        <Tooltip label={dealer.phone}>
+                          <Badge colorScheme="purple" display="flex" alignItems="center" gap={1}>
+                            <FaPhone /> Phone
+                          </Badge>
+                        </Tooltip>
+                      </WrapItem>
+                    )}
+                    
+                    {dealer.contact_form_url && (
+                      <WrapItem>
+                        <Link href={dealer.contact_form_url} isExternal onClick={(e) => e.stopPropagation()}>
+                          <Badge colorScheme="teal" display="flex" alignItems="center" gap={1} cursor="pointer">
+                            <FaWpforms /> Contact Page
+                          </Badge>
+                        </Link>
+                      </WrapItem>
+                    )}
+                  </Wrap>
+                  
+                  {dealer.website && (
+                    <HStack spacing={2} fontSize="sm">
+                      <FaExternalLinkAlt color="var(--chakra-colors-gray-500)" size={12} />
+                      <Link
+                        color="brand.500"
+                        href={dealer.website}
+                        isExternal
+                        onClick={(e) => e.stopPropagation()}
+                        _hover={{ textDecoration: 'underline' }}
+                        noOfLines={1}
+                      >
+                        {dealer.website.replace('https://', '').replace('http://', '')}
+                      </Link>
+                    </HStack>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
+          )
+        })}
+      </SimpleGrid>
+
+      <DealerDetailModal dealer={selectedDealer} onClose={() => setSelectedDealer(null)} />
+    </>
+  )
+}
+
+function DealerDetailModal({ dealer, onClose }) {
+  if (!dealer) return null
+
+  const getExtraData = () => {
+    try {
+      return typeof dealer.extra_data === 'string' 
+        ? JSON.parse(dealer.extra_data) 
+        : dealer.extra_data || {}
+    } catch {
+      return {}
+    }
+  }
+
+  const extraData = getExtraData()
+  const class3Evidence = extraData.class3_evidence || 'No evidence data available'
+  
+  const getConfidenceValue = () => {
+    const rawConfidence = extraData.class3_confidence
+    if (rawConfidence === null || rawConfidence === undefined) return null
+    const numConfidence = Number(rawConfidence)
+    return Number.isNaN(numConfidence) ? null : numConfidence
+  }
+  
+  const confidence = getConfidenceValue()
+
+  return (
+    <Modal isOpen={true} onClose={onClose} size="xl" scrollBehavior="inside">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          <VStack align="start" spacing={1}>
+            <Text>{dealer.business_name}</Text>
+            <Text fontSize="sm" fontWeight="normal" color="gray.600">
+              {dealer.city}, {dealer.state}
+            </Text>
+          </VStack>
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6}>
+          <VStack align="stretch" spacing={4}>
+            <Box>
+              <Text fontWeight="bold" mb={2}>Contact Information</Text>
+              <Table size="sm" variant="simple">
+                <Tbody>
+                  {dealer.website && (
+                    <Tr>
+                      <Td fontWeight="medium" w="140px">Website</Td>
+                      <Td>
+                        <Link href={dealer.website} isExternal color="brand.500">
+                          {dealer.website}
+                        </Link>
+                      </Td>
+                    </Tr>
+                  )}
+                  {dealer.email && (
+                    <Tr>
+                      <Td fontWeight="medium">Email</Td>
+                      <Td>{dealer.email}</Td>
+                    </Tr>
+                  )}
+                  {dealer.phone && (
+                    <Tr>
+                      <Td fontWeight="medium">Phone</Td>
+                      <Td>{dealer.phone}</Td>
+                    </Tr>
+                  )}
+                  {dealer.contact_form_url && (
+                    <Tr>
+                      <Td fontWeight="medium">Contact Form</Td>
+                      <Td>
+                        <Link href={dealer.contact_form_url} isExternal color="brand.500">
+                          {dealer.contact_form_url}
+                        </Link>
+                      </Td>
+                    </Tr>
+                  )}
+                  <Tr>
+                    <Td fontWeight="medium">License</Td>
+                    <Td>
+                      {dealer.license_number || 'N/A'}
+                      {dealer.license_type && ` (${dealer.license_type})`}
+                    </Td>
+                  </Tr>
+                </Tbody>
+              </Table>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <HStack justify="space-between" mb={2}>
+                <Text fontWeight="bold">Class 3 SOT Status</Text>
+                <Badge 
+                  colorScheme={dealer.sot_class === 'Class 3 SOT' ? 'green' : dealer.sot_class === 'No Class 3' ? 'orange' : 'gray'}
+                  fontSize="md"
+                >
+                  {dealer.sot_class || 'Unknown'}
+                </Badge>
               </HStack>
               
-              <Text fontSize="sm" color="gray.600">
-                📍 {dealer.city}, {dealer.state}
-              </Text>
-              
-              {dealer.phone && (
-                <Text fontSize="sm" color="gray.600">
-                  📞 {dealer.phone}
+              {confidence !== null && (
+                <Text fontSize="sm" color="gray.600" mb={3}>
+                  AI Confidence: <strong>{confidence.toFixed(0)}%</strong>
                 </Text>
-              )}
-              
-              {dealer.website && (
-                <HStack>
-                  <FaExternalLinkAlt color="var(--chakra-colors-brand-500)" />
-                  <Text
-                    fontSize="sm"
-                    color="brand.500"
-                    as="a"
-                    href={dealer.website}
-                    target="_blank"
-                    _hover={{ textDecoration: 'underline' }}
-                  >
-                    {dealer.website.replace('https://', '').replace('http://', '')}
-                  </Text>
-                </HStack>
               )}
 
-              {dealer.sot_class && (
-                <Text fontSize="xs" color="gray.500">
-                  {dealer.sot_class}
+              <Box bg="gray.50" p={3} borderRadius="md" maxH="300px" overflowY="auto">
+                <Text fontWeight="medium" fontSize="sm" mb={2} color="gray.700">
+                  AI Analysis Evidence:
                 </Text>
-              )}
-            </VStack>
-          </CardBody>
-        </Card>
-      ))}
-    </SimpleGrid>
+                <Text fontSize="sm" whiteSpace="pre-wrap" color="gray.700">
+                  {class3Evidence}
+                </Text>
+              </Box>
+            </Box>
+
+            {extraData && Object.keys(extraData).length > 0 && (
+              <>
+                <Divider />
+                <Box>
+                  <Text fontWeight="bold" mb={2}>Additional Data</Text>
+                  <Box bg="gray.50" p={3} borderRadius="md" maxH="200px" overflowY="auto">
+                    <Code fontSize="xs" display="block" whiteSpace="pre-wrap">
+                      {JSON.stringify(extraData, null, 2)}
+                    </Code>
+                  </Box>
+                </Box>
+              </>
+            )}
+          </VStack>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   )
 }
