@@ -203,11 +203,13 @@ def import_dealers_from_state(
             # Store Class 3 verification results
             if enriched.get('class3_verified') is not None:
                 dealer.sot_class = 'Class 3 SOT' if enriched['class3_verified'] else 'No Class 3'
-                if not dealer.extra_data:
-                    dealer.extra_data = {}
-                dealer.extra_data['class3_confidence'] = enriched.get('class3_confidence', 0.0)
-                dealer.extra_data['class3_evidence'] = enriched.get('class3_evidence', '')
-                dealer.extra_data['class3_verified_at'] = datetime.now().isoformat()
+                # SQLAlchemy doesn't detect in-place JSON mutations, so reassign the whole dict
+                dealer.extra_data = {
+                    **(dealer.extra_data or {}),
+                    'class3_confidence': enriched.get('class3_confidence', 0.0),
+                    'class3_evidence': enriched.get('class3_evidence', ''),
+                    'class3_verified_at': datetime.now().isoformat()
+                }
         
         db.commit()
         activity.log('info', f"Import and enrichment complete for {state}")
@@ -268,11 +270,13 @@ def re_enrich_all_dealers(
             # Store Class 3 verification results
             if enriched.get('class3_verified') is not None:
                 dealer.sot_class = 'Class 3 SOT' if enriched['class3_verified'] else 'No Class 3'
-                if not dealer.extra_data:
-                    dealer.extra_data = {}
-                dealer.extra_data['class3_confidence'] = enriched.get('class3_confidence', 0.0)
-                dealer.extra_data['class3_evidence'] = enriched.get('class3_evidence', '')
-                dealer.extra_data['class3_verified_at'] = datetime.now().isoformat()
+                # SQLAlchemy doesn't detect in-place JSON mutations, so reassign the whole dict
+                dealer.extra_data = {
+                    **(dealer.extra_data or {}),
+                    'class3_confidence': enriched.get('class3_confidence', 0.0),
+                    'class3_evidence': enriched.get('class3_evidence', ''),
+                    'class3_verified_at': datetime.now().isoformat()
+                }
             
             # Commit after each dealer to avoid losing progress
             db.commit()
