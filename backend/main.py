@@ -433,8 +433,7 @@ def get_stats(
     
     enriched_count = db.query(Dealer).filter(
         Dealer.tenant_id == tenant_id,
-        Dealer.website != None,
-        Dealer.website != ""
+        Dealer.status == DealerStatus.ENRICHED
     ).count()
     
     # Get state breakdown
