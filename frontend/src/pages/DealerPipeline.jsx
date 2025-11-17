@@ -118,33 +118,34 @@ export default function DealerPipeline() {
 
   const getStats = () => {
     const total = dealers.length
-    const discovered = dealers.filter(d => d.status === 'DISCOVERED').length
-    const enriched = dealers.filter(d => d.status === 'ENRICHED').length
-    const contacted = dealers.filter(d => d.status === 'CONTACTED').length
+    const discovered = dealers.filter(d => d.status?.toUpperCase() === 'DISCOVERED').length
+    const enriched = dealers.filter(d => d.status?.toUpperCase() === 'ENRICHED').length
+    const contacted = dealers.filter(d => d.status?.toUpperCase() === 'CONTACTED').length
     const hasClass3 = dealers.filter(d => d.sot_class === 'Class 3 SOT').length
 
     return { total, discovered, enriched, contacted, hasClass3 }
   }
 
   const filterByStatus = (status) => {
-    return filteredDealers.filter(d => d.status === status)
+    return filteredDealers.filter(d => d.status?.toUpperCase() === status.toUpperCase())
   }
 
   const getReadyToContact = () => {
-    return filteredDealers.filter(d => d.status === 'ENRICHED' && d.sot_class === 'Class 3 SOT')
+    return filteredDealers.filter(d => d.status?.toUpperCase() === 'ENRICHED' && d.sot_class === 'Class 3 SOT')
   }
 
   const getStatusBadge = (dealer) => {
-    if (dealer.status === 'ENRICHED' && dealer.sot_class === 'Class 3 SOT') {
+    const statusUpper = dealer.status?.toUpperCase()
+    if (statusUpper === 'ENRICHED' && dealer.sot_class === 'Class 3 SOT') {
       return <Badge colorScheme="green">✓ Class 3 Verified</Badge>
     }
-    if (dealer.status === 'ENRICHED' && dealer.sot_class === 'No Class 3') {
+    if (statusUpper === 'ENRICHED' && dealer.sot_class === 'No Class 3') {
       return <Badge colorScheme="orange">✗ No Class 3</Badge>
     }
-    if (dealer.status === 'ENRICHED') {
+    if (statusUpper === 'ENRICHED') {
       return <Badge colorScheme="blue">Enriched</Badge>
     }
-    if (dealer.status === 'CONTACTED') {
+    if (statusUpper === 'CONTACTED') {
       return <Badge colorScheme="purple">Contacted</Badge>
     }
     return <Badge colorScheme="gray">Discovered</Badge>
