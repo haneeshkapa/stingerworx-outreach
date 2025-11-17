@@ -56,6 +56,10 @@ class StatsResponse(BaseModel):
     contacted_dealers: int
     interested_leads: int
     pending_approvals: int
+    class3_verified: int
+    discovered_count: int
+    enriched_count: int
+    state_breakdown: dict
 
 class DealerCreate(BaseModel):
     business_name: str
@@ -415,11 +419,44 @@ def get_stats(
         OutreachAttempt.status == OutreachStatus.PENDING
     ).count()
     
+    # Count Class 3 SOT dealers
+    class3_verified = db.query(Dealer).filter(
+        Dealer.tenant_id == tenant_id,
+        Dealer.sot_class == "Class 3 SOT"
+    ).count()
+    
+    # Count discovered and enriched dealers
+    discovered_count = db.query(Dealer).filter(
+        Dealer.tenant_id == tenant_id,
+        Dealer.status == DealerStatus.DISCOVERED
+    ).count()
+    
+    enriched_count = db.query(Dealer).filter(
+        Dealer.tenant_id == tenant_id,
+        Dealer.website != None,
+        Dealer.website != ""
+    ).count()
+    
+    # Get state breakdown
+    from sqlalchemy import func
+    state_counts = db.query(
+        Dealer.state,
+        func.count(Dealer.id).label('count')
+    ).filter(
+        Dealer.tenant_id == tenant_id
+    ).group_by(Dealer.state).all()
+    
+    state_breakdown = {state: count for state, count in state_counts}
+    
     return {
         "total_dealers": total_dealers,
         "contacted_dealers": contacted,
         "interested_leads": interested,
-        "pending_approvals": pending
+        "pending_approvals": pending,
+        "class3_verified": class3_verified,
+        "discovered_count": discovered_count,
+        "enriched_count": enriched_count,
+        "state_breakdown": state_breakdown
     }
 
 @app.get("/api/templates", response_model=List[MessageTemplateResponse])

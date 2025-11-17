@@ -212,6 +212,37 @@ export default function DealerPipeline() {
                 </Card>
               </SimpleGrid>
 
+              <Card>
+                <CardBody>
+                  <HStack justify="space-between" mb={3}>
+                    <Heading size="sm">Imported States</Heading>
+                    <Badge colorScheme="blue">{uniqueStates.length} states</Badge>
+                  </HStack>
+                  <Wrap spacing={2}>
+                    {uniqueStates.map(state => {
+                      const stateCount = dealers.filter(d => d.state === state).length
+                      const class3Count = dealers.filter(d => d.state === state && d.sot_class === 'Class 3 SOT').length
+                      return (
+                        <WrapItem key={state}>
+                          <Tooltip label={`${stateCount} dealers, ${class3Count} Class 3 verified`}>
+                            <Badge 
+                              colorScheme={class3Count > 0 ? 'green' : 'gray'}
+                              fontSize="sm"
+                              px={3}
+                              py={1}
+                              cursor="pointer"
+                              onClick={() => setStateFilter(state)}
+                            >
+                              {state} ({stateCount})
+                            </Badge>
+                          </Tooltip>
+                        </WrapItem>
+                      )
+                    })}
+                  </Wrap>
+                </CardBody>
+              </Card>
+
               <HStack spacing={4}>
                 <InputGroup flex={1}>
                   <InputLeftElement>
