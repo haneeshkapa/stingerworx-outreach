@@ -11,19 +11,20 @@ from typing import Dict, Optional
 import logging
 from scrapers.ai_browser_agent import AIBrowserAgent
 from scrapers.class3_verifier import Class3Verifier
-from scrapers.crawl4ai_search import run_async_search
+from scrapers.http_search import HTTPSearch
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 class ContactEnricher:
-    """Enriches dealer records with website and contact information using Crawl4AI"""
+    """Enriches dealer records with website and contact information using HTTP search"""
     
     def __init__(self, db: Session = None, tenant_id: int = None):
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
+        self.http_searcher = HTTPSearch()  # Simple HTTP-based search (no browser needed)
         self.ai_agent = AIBrowserAgent()  # Keep for legacy support
         self.class3_verifier = Class3Verifier(db, tenant_id) if db and tenant_id else None
-        self.use_crawl4ai = True  # Flag to use Crawl4AI instead of broken search
+        self.use_http_search = True  # Use simple HTTP search instead of browser automation
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
         """
@@ -118,38 +119,17 @@ class ContactEnricher:
         """
         enriched = dealer.copy()
         
-        logger.info(f"Enriching dealer with Crawl4AI: {dealer['business_name']}")
+        logger.info(f"Enriching dealer with HTTP search: {dealer['business_name']}")
         
-        # Find website and contact info using Crawl4AI (more reliable)
-        if self.use_crawl4ai:
-            search_result = run_async_search(
+        # Find website and contact info using simple HTTP search (no browser needed)
+        if self.use_http_search:
+            contact_data = self.http_searcher.find_dealer_website(
                 dealer['business_name'],
                 dealer.get('city', ''),
                 dealer.get('state', '')
             )
             
-            if search_result:
-                contact_data = {
-                    'website': search_result.get('url'),
-                    'email': None,
-                    'phone': None,
-                    'address': None,
-                    'contact_form_url': None
-                }
-                
-                # Extract contact info from markdown content using regex
-                markdown = search_result.get('markdown', '')
-                
-                # Extract email
-                emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', markdown)
-                if emails:
-                    contact_data['email'] = emails[0]
-                
-                # Extract phone
-                phones = re.findall(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', markdown)
-                if phones:
-                    contact_data['phone'] = phones[0]
-            else:
+            if not contact_data:
                 contact_data = {
                     'website': None,
                     'email': None,
@@ -158,7 +138,7 @@ class ContactEnricher:
                     'contact_form_url': None
                 }
         else:
-            # Fallback to old method (currently broken)
+            # Fallback to old method
             contact_data = self.ai_agent.find_dealer_website_and_contacts(
                 dealer['business_name'],
                 dealer.get('city', ''),
