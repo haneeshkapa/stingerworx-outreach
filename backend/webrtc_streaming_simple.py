@@ -137,7 +137,8 @@ class SimpleStreamManager:
         session = self.sessions.get(session_id)
         if session:
             await session['pc'].close()
-            del self.sessions[session_id]
+            if session_id in self.sessions:
+                del self.sessions[session_id]
             logger.info(f"🗑️ Closed session: {session_id}")
     
     async def close_all(self):

@@ -46,9 +46,26 @@ function BrowserStream() {
 
       peerConnectionRef.current = pc
 
+      // Debug ICE connection
+      pc.oniceconnectionstatechange = () => {
+        console.log('❄️ ICE connection state:', pc.iceConnectionState)
+      }
+
+      pc.onicegatheringstatechange = () => {
+        console.log('📡 ICE gathering state:', pc.iceGatheringState)
+      }
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log('🧊 ICE candidate:', event.candidate.type, event.candidate.candidate)
+        } else {
+          console.log('✅ ICE gathering complete')
+        }
+      }
+
       // Handle connection state changes
       pc.onconnectionstatechange = () => {
-        console.log('Connection state:', pc.connectionState)
+        console.log('🔌 Connection state:', pc.connectionState)
         setConnectionState(pc.connectionState)
         
         if (pc.connectionState === 'connected') {
