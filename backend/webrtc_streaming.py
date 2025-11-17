@@ -1,40 +1,47 @@
 """
-WebRTC Browser Streaming Module
-Provides real-time video streaming of Playwright browser automation via aiortc
+WebRTC Browser Streaming Module using CDP (Chrome DevTools Protocol)
+Provides real-time video streaming via CDP's Page.startScreencast for efficient DOM mirroring
 """
 import asyncio
 import base64
 import logging
-from typing import Optional, AsyncIterator
+from typing import Optional
 from datetime import datetime
 import numpy as np
 from PIL import Image
 import io
+from collections import deque
 
-from playwright.async_api import async_playwright, Page, Browser
+from playwright.async_api import async_playwright, Page, Browser, CDPSession
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
 
 logger = logging.getLogger(__name__)
 
-class FrameProducer:
+class CDPFrameProducer:
     """
-    Captures frames from a Playwright browser session.
-    Uses Playwright's screenshot API to capture frames at target FPS.
+    Captures frames from browser using Chrome DevTools Protocol (CDP) screencast.
+    Much more efficient than screenshot-based approach - uses CDP Page.startScreencast.
     """
     
-    def __init__(self, target_fps: int = 10):
+    def __init__(self, target_fps: int = 15, max_buffer_size: int = 30):
         self.target_fps = target_fps
-        self.frame_interval = 1.0 / target_fps
+        self.max_buffer_size = max_buffer_size
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
+        self.cdp_session: Optional[CDPSession] = None
         self.playwright = None
         self.running = False
         
-    async def start(self, url: str = "https://www.google.com", headless: bool = False):
-        """Start Playwright browser and navigate to URL"""
-        logger.info(f"🎬 Starting browser for WebRTC stream (headless={headless})")
+        # Frame buffer for async decoupling
+        self.frame_buffer = deque(maxlen=max_buffer_size)
+        self.latest_frame: Optional[bytes] = None
+        self.frame_lock = asyncio.Lock()
+        
+    async def start(self, url: str = "https://www.google.com", headless: bool = True):
+        """Start Playwright browser with CDP session and begin screencast"""
+        logger.info(f"🎬 Starting CDP browser stream (headless={headless}, {self.target_fps} FPS)")
         
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(
@@ -46,47 +53,83 @@ class FrameProducer:
             ]
         )
         
+        # Create page with specific viewport for consistent streaming
         self.page = await self.browser.new_page(viewport={'width': 1280, 'height': 720})
+        
+        # Create CDP session for direct protocol access
+        self.cdp_session = await self.page.context.new_cdp_session(self.page)
+        
+        # Set up screencast frame handler
+        self.cdp_session.on("Page.screencastFrame", self._handle_screencast_frame)
+        
+        # Start screencast with CDP
+        await self.cdp_session.send("Page.startScreencast", {
+            "format": "jpeg",
+            "quality": 80,
+            "maxWidth": 1280,
+            "maxHeight": 720,
+            "everyNthFrame": max(1, int(30 / self.target_fps))  # Throttle to target FPS
+        })
+        
+        # Navigate to initial URL
         await self.page.goto(url)
         
         self.running = True
-        logger.info(f"✅ Browser started and navigated to {url}")
+        logger.info(f"✅ CDP screencast started at {url}")
         
-    async def capture_frame(self) -> bytes:
-        """Capture a single frame as JPEG bytes"""
-        if not self.page:
-            raise RuntimeError("Browser not started")
+    async def _handle_screencast_frame(self, params: dict):
+        """
+        CDP event handler for Page.screencastFrame events.
+        Receives frames directly from Chrome compositor.
+        """
+        try:
+            # Extract frame data
+            session_id = params.get("sessionId")
+            frame_data = params.get("data")  # Base64 encoded JPEG
             
-        screenshot_bytes = await self.page.screenshot(type='jpeg', quality=80)
-        return screenshot_bytes
+            # Acknowledge frame (required by CDP protocol)
+            if session_id and self.cdp_session:
+                await self.cdp_session.send("Page.screencastFrameAck", {"sessionId": session_id})
+            
+            # Decode base64 frame
+            if frame_data:
+                frame_bytes = base64.b64decode(frame_data)
+                
+                async with self.frame_lock:
+                    self.latest_frame = frame_bytes
+                    self.frame_buffer.append(frame_bytes)
+                
+        except Exception as e:
+            logger.error(f"Error handling CDP screencast frame: {e}")
     
-    async def frame_iterator(self) -> AsyncIterator[bytes]:
-        """Async generator that yields frames at target FPS"""
-        while self.running:
-            try:
-                frame_bytes = await self.capture_frame()
-                yield frame_bytes
-                await asyncio.sleep(self.frame_interval)
-            except Exception as e:
-                logger.error(f"Frame capture error: {e}")
-                break
+    async def get_latest_frame(self) -> Optional[bytes]:
+        """Get the most recent frame from CDP screencast"""
+        async with self.frame_lock:
+            return self.latest_frame
     
     async def navigate(self, url: str):
         """Navigate browser to new URL"""
         if self.page:
             logger.info(f"🔗 Navigating to {url}")
-            await self.page.goto(url)
+            await self.page.goto(url, wait_until="domcontentloaded")
     
     async def fill_and_search(self, selector: str, text: str):
         """Helper to fill input and press Enter"""
         if self.page:
             await self.page.fill(selector, text)
             await self.page.press(selector, 'Enter')
-            await asyncio.sleep(2)
+            await asyncio.sleep(1.5)
     
     async def stop(self):
-        """Stop browser and cleanup"""
+        """Stop CDP screencast and cleanup"""
         self.running = False
+        
+        try:
+            if self.cdp_session:
+                await self.cdp_session.send("Page.stopScreencast")
+                await self.cdp_session.detach()
+        except Exception as e:
+            logger.error(f"Error stopping CDP session: {e}")
         
         if self.page:
             await self.page.close()
@@ -95,40 +138,55 @@ class FrameProducer:
         if self.playwright:
             await self.playwright.stop()
             
-        logger.info("🛑 Browser stopped")
+        logger.info("🛑 CDP browser stream stopped")
 
 
-class BrowserVideoStreamTrack(VideoStreamTrack):
+class CDPVideoStreamTrack(VideoStreamTrack):
     """
-    aiortc VideoStreamTrack that streams frames from FrameProducer.
-    Converts JPEG screenshots to VideoFrame objects for WebRTC transmission.
+    aiortc VideoStreamTrack that streams frames from CDP screencast.
+    Efficiently converts CDP JPEG frames to VideoFrame objects.
     """
     
-    def __init__(self, frame_producer: FrameProducer):
+    def __init__(self, frame_producer: CDPFrameProducer):
         super().__init__()
         self.frame_producer = frame_producer
         self.counter = 0
+        self.placeholder_frame = None
+        
+    def _create_placeholder_frame(self):
+        """Create a black placeholder frame for when no CDP frames available yet"""
+        img_array = np.zeros((720, 1280, 3), dtype=np.uint8)
+        frame = VideoFrame.from_ndarray(img_array, format='bgr24')
+        return frame
         
     async def recv(self):
         """
         Called by aiortc to get next video frame.
-        Converts JPEG bytes to numpy array to VideoFrame.
+        Returns CDP screencast frame as VideoFrame.
         """
         pts, time_base = await self.next_timestamp()
         
         try:
-            frame_bytes = await self.frame_producer.capture_frame()
+            # Get latest frame from CDP
+            frame_bytes = await self.frame_producer.get_latest_frame()
             
-            # Convert JPEG bytes to PIL Image to numpy array
-            image = Image.open(io.BytesIO(frame_bytes))
-            img_array = np.array(image)
+            if not frame_bytes:
+                # No frame available yet, return placeholder
+                if not self.placeholder_frame:
+                    self.placeholder_frame = self._create_placeholder_frame()
+                frame = self.placeholder_frame
+            else:
+                # Convert JPEG bytes to PIL Image to numpy array
+                image = Image.open(io.BytesIO(frame_bytes))
+                img_array = np.array(image)
+                
+                # Convert RGB to BGR for VideoFrame
+                if len(img_array.shape) == 3 and img_array.shape[2] == 3:
+                    img_array = img_array[:, :, ::-1]
+                
+                # Create VideoFrame
+                frame = VideoFrame.from_ndarray(img_array, format='bgr24')
             
-            # Convert RGB to BGR for VideoFrame (if needed)
-            if img_array.shape[2] == 3:
-                img_array = img_array[:, :, ::-1]
-            
-            # Create VideoFrame
-            frame = VideoFrame.from_ndarray(img_array, format='bgr24')
             frame.pts = pts
             frame.time_base = time_base
             
@@ -137,35 +195,41 @@ class BrowserVideoStreamTrack(VideoStreamTrack):
             
         except Exception as e:
             logger.error(f"Frame conversion error: {e}")
-            raise
+            # Return placeholder on error
+            if not self.placeholder_frame:
+                self.placeholder_frame = self._create_placeholder_frame()
+            frame = self.placeholder_frame
+            frame.pts = pts
+            frame.time_base = time_base
+            return frame
 
 
 class BrowserStreamManager:
     """
-    Manages WebRTC peer connections and Playwright browser sessions.
-    Maps session_id → (RTCPeerConnection, FrameProducer)
+    Manages WebRTC peer connections and CDP browser sessions.
+    Maps session_id → (RTCPeerConnection, CDPFrameProducer)
     """
     
     def __init__(self):
         self.sessions = {}
         self.relay = MediaRelay()
         
-    async def create_session(self, session_id: str, headless: bool = False) -> RTCPeerConnection:
+    async def create_session(self, session_id: str, headless: bool = True) -> RTCPeerConnection:
         """
-        Create new WebRTC session with browser stream.
+        Create new WebRTC session with CDP browser stream.
         Returns RTCPeerConnection ready for offer/answer exchange.
         """
-        logger.info(f"🎥 Creating WebRTC session: {session_id}")
+        logger.info(f"🎥 Creating CDP WebRTC session: {session_id}")
         
-        # Create frame producer and start browser
-        frame_producer = FrameProducer(target_fps=10)
+        # Create CDP frame producer and start browser
+        frame_producer = CDPFrameProducer(target_fps=15)
         await frame_producer.start(url="https://www.google.com", headless=headless)
         
         # Create WebRTC peer connection
         pc = RTCPeerConnection()
         
-        # Add video track
-        video_track = BrowserVideoStreamTrack(frame_producer)
+        # Add video track with CDP stream
+        video_track = CDPVideoStreamTrack(frame_producer)
         pc.addTrack(video_track)
         
         # Store session
@@ -209,7 +273,7 @@ class BrowserStreamManager:
             await session['producer'].stop()
             await session['pc'].close()
             del self.sessions[session_id]
-            logger.info(f"🗑️ Closed session: {session_id}")
+            logger.info(f"🗑️ Closed CDP session: {session_id}")
     
     async def close_all(self):
         """Close all active sessions"""
