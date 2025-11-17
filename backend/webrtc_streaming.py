@@ -59,8 +59,11 @@ class CDPFrameProducer:
         # Create CDP session for direct protocol access
         self.cdp_session = await self.page.context.new_cdp_session(self.page)
         
-        # Set up screencast frame handler
-        self.cdp_session.on("Page.screencastFrame", self._handle_screencast_frame)
+        # Set up screencast frame handler (wrap async handler to schedule it properly)
+        self.cdp_session.on(
+            "Page.screencastFrame",
+            lambda params: asyncio.create_task(self._handle_screencast_frame(params))
+        )
         
         # Start screencast with CDP
         await self.cdp_session.send("Page.startScreencast", {
