@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.14.2",
+    "crawl4ai>=0.7.7",
     "openai>=2.8.0",
     "openpyxl>=3.1.5",
     "playwright>=1.56.0",
