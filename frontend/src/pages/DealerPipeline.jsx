@@ -79,7 +79,7 @@ export default function DealerPipeline() {
 
   const fetchDealers = async () => {
     try {
-      const response = await dealersApi.getAll()
+      const response = await dealersApi.getAll({ limit: 5000 })
       const data = response.data
       setDealers(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -290,7 +290,7 @@ export default function DealerPipeline() {
                   <Tab>All ({filteredDealers.length})</Tab>
                   <Tab>Discovered ({filterByStatus('DISCOVERED').length})</Tab>
                   <Tab>Enriched ({filterByStatus('ENRICHED').length})</Tab>
-                  <Tab>Ready to Contact ({getReadyToContact().length})</Tab>
+                  <Tab color="green.600" fontWeight="bold">Class 3 Verified ({getReadyToContact().length})</Tab>
                   <Tab>Contacted ({filterByStatus('CONTACTED').length})</Tab>
                 </TabList>
 
