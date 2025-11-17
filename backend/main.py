@@ -476,6 +476,37 @@ def get_templates(
     ).all()
     return templates
 
+@app.get("/api/logs")
+def get_workflow_logs(lines: int = 500):
+    """
+    Get the latest backend workflow logs for real-time monitoring
+    """
+    import glob
+    
+    # Find the latest backend log file
+    log_files = glob.glob('/tmp/logs/backend_*.log')
+    if not log_files:
+        return {"logs": "No logs available yet"}
+    
+    # Get the most recent log file
+    latest_log = max(log_files, key=os.path.getmtime)
+    
+    try:
+        with open(latest_log, 'r') as f:
+            # Read all lines and get the last N lines
+            all_lines = f.readlines()
+            recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+            log_content = ''.join(recent_lines)
+        
+        return {
+            "logs": log_content,
+            "file": latest_log,
+            "total_lines": len(all_lines),
+            "showing_lines": len(recent_lines)
+        }
+    except Exception as e:
+        return {"logs": f"Error reading logs: {str(e)}"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

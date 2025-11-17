@@ -19,6 +19,9 @@ export default function Navbar() {
             <Button as={RouterLink} to="/campaigns" variant="ghost" colorScheme="brand">
               Campaigns
             </Button>
+            <Button as={RouterLink} to="/logs" variant="ghost" colorScheme="brand">
+              Logs
+            </Button>
           </HStack>
         </HStack>
         <Text fontSize="sm" color="gray.600">
