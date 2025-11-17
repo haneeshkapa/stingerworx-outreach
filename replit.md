@@ -156,12 +156,20 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-17: **CDP Live DOM Mirror Streaming (Upgraded WebRTC)**
+  - **Migrated to Chrome DevTools Protocol (CDP) for superior performance**
+  - Uses Page.startScreencast for event-driven frame streaming (vs. polling screenshots)
+  - Frames pushed directly from Chrome compositor via Page.screencastFrame events
+  - Implemented CDPFrameProducer with async frame buffer (deque) for smooth delivery
+  - Fixed critical async event handler bug (wrapped with asyncio.create_task)
+  - Performance improvement: 15 FPS with lower CPU overhead vs. 10 FPS screenshot-based
+  - Event-driven architecture eliminates screenshot polling latency
+  - Frame acknowledgment (Page.screencastFrameAck) ensures continuous stream
+  - WebRTC client receives real-time DOM updates via aiortc video track
 - 2025-11-17: **WebRTC Browser Streaming Implemented**
   - Built complete WebRTC video streaming system using aiortc for real-time browser automation viewing
-  - Created webrtc_streaming.py module with FrameProducer, BrowserVideoStreamTrack, and BrowserStreamManager classes
   - Added FastAPI signaling endpoints: /api/webrtc/offer, /api/webrtc/search, /api/webrtc/session (DELETE)
   - Implemented React BrowserStream component with RTCPeerConnection for WebRTC client
-  - Streams Playwright browser viewport at 10 FPS @ 720p resolution
   - Supports live Google searches and URL navigation within video stream
   - Installed system dependencies: ffmpeg, libvpx, libopus, aiortc, av, numpy
   - Added "Live Stream" navigation link and dedicated /browser-stream page
