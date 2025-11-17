@@ -15,11 +15,12 @@ AI-driven multi-tenant SaaS platform for automated dealer discovery and outreach
 ✅ Stingerworx tenant seeded with sample dealers  
 ✅ Basic dealer listing and stats display  
 ✅ Campaign management UI structure  
-✅ **Crawl4AI Browser Automation** - Chromium-powered web scraping (WORKING!)  
+✅ **Crawl4AI Browser Automation** - Chromium headless browser for web scraping (WORKING!)  
 ✅ **Intelligent Website Discovery** - Google search + URL validation  
 ✅ **Contact Information Extraction** - Email, phone, address extraction from pages  
 ✅ **Class 3 SOT Verification** - AI analyzes dealer websites for NFA license indicators  
-✅ **Real-Time Activity Feed** - Live monitoring of enrichment progress
+✅ **Real-Time Activity Feed** - Live monitoring of enrichment progress  
+✅ **Live Logs Viewer** - Terminal-style real-time workflow monitoring
 
 ### In Progress
 🔄 Contact form automation with Playwright  
