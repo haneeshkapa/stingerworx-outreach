@@ -34,7 +34,11 @@ class DealerResponse(BaseModel):
     city: str
     phone: str | None
     website: str | None
+    email: str | None
+    contact_form_url: str | None
+    sot_class: str | None
     status: str
+    extra_data: dict | None
     created_at: datetime
     
     class Config:
