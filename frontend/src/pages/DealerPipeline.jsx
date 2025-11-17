@@ -50,7 +50,7 @@ import {
   Td,
   Code,
 } from '@chakra-ui/react'
-import { dealersApi } from '../services/api'
+import { dealersApi, statsApi } from '../services/api'
 import { useNavigate } from 'react-router-dom'
 import ActivitySidebar from '../components/ActivitySidebar'
 
@@ -60,11 +60,16 @@ export default function DealerPipeline() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [stateFilter, setStateFilter] = useState('')
+  const [apiStats, setApiStats] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchDealers()
-    const interval = setInterval(fetchDealers, 5000)
+    fetchStats()
+    const interval = setInterval(() => {
+      fetchDealers()
+      fetchStats()
+    }, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -82,6 +87,15 @@ export default function DealerPipeline() {
       setDealers([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await statsApi.get()
+      setApiStats(response.data)
+    } catch (error) {
+      console.error('Error fetching stats:', error)
     }
   }
 
@@ -137,7 +151,9 @@ export default function DealerPipeline() {
   }
 
   const stats = getStats()
-  const uniqueStates = [...new Set(dealers.map(d => d.state))].sort()
+  const uniqueStates = apiStats?.state_breakdown 
+    ? Object.keys(apiStats.state_breakdown).sort() 
+    : [...new Set(dealers.map(d => d.state))].sort()
 
   if (loading) {
     return (
@@ -170,7 +186,7 @@ export default function DealerPipeline() {
                   <CardBody>
                     <Stat size="sm">
                       <StatLabel>Total Dealers</StatLabel>
-                      <StatNumber>{stats.total}</StatNumber>
+                      <StatNumber>{apiStats?.total_dealers || stats.total}</StatNumber>
                     </Stat>
                   </CardBody>
                 </Card>
@@ -178,7 +194,7 @@ export default function DealerPipeline() {
                   <CardBody>
                     <Stat size="sm">
                       <StatLabel>Discovered</StatLabel>
-                      <StatNumber>{stats.discovered}</StatNumber>
+                      <StatNumber>{apiStats?.discovered_count || stats.discovered}</StatNumber>
                       <StatHelpText>Pending AI analysis</StatHelpText>
                     </Stat>
                   </CardBody>
@@ -187,7 +203,7 @@ export default function DealerPipeline() {
                   <CardBody>
                     <Stat size="sm">
                       <StatLabel>Enriched</StatLabel>
-                      <StatNumber>{stats.enriched}</StatNumber>
+                      <StatNumber>{apiStats?.enriched_count || stats.enriched}</StatNumber>
                       <StatHelpText>Website found</StatHelpText>
                     </Stat>
                   </CardBody>
@@ -196,7 +212,7 @@ export default function DealerPipeline() {
                   <CardBody>
                     <Stat size="sm">
                       <StatLabel>Class 3 Verified</StatLabel>
-                      <StatNumber color="green.600">{stats.hasClass3}</StatNumber>
+                      <StatNumber color="green.600">{apiStats?.class3_verified || stats.hasClass3}</StatNumber>
                       <StatHelpText>AI confirmed</StatHelpText>
                     </Stat>
                   </CardBody>
@@ -205,7 +221,7 @@ export default function DealerPipeline() {
                   <CardBody>
                     <Stat size="sm">
                       <StatLabel>Contacted</StatLabel>
-                      <StatNumber>{stats.contacted}</StatNumber>
+                      <StatNumber>{apiStats?.contacted_dealers || stats.contacted}</StatNumber>
                       <StatHelpText>Outreach sent</StatHelpText>
                     </Stat>
                   </CardBody>
@@ -220,7 +236,7 @@ export default function DealerPipeline() {
                   </HStack>
                   <Wrap spacing={2}>
                     {uniqueStates.map(state => {
-                      const stateCount = dealers.filter(d => d.state === state).length
+                      const stateCount = apiStats?.state_breakdown?.[state] || dealers.filter(d => d.state === state).length
                       const class3Count = dealers.filter(d => d.state === state && d.sot_class === 'Class 3 SOT').length
                       return (
                         <WrapItem key={state}>
