@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-20", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["copilot-cli", "gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "chromium", "xorg.libxcb", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "alsa-lib", "mesa", "nss", "nspr", "dbus", "atk", "at-spi2-atk", "cups", "libxkbcommon", "pango", "cairo", "chromium", "driversi686Linux.mesa", "libgbm"]
+packages = ["copilot-cli", "gitFull", "glibcLocales", "libxcrypt", "playwright-driver", "xcodebuild", "zlib", "chromium", "xorg.libxcb", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXfixes", "alsa-lib", "mesa", "nss", "nspr", "dbus", "atk", "at-spi2-atk", "cups", "libxkbcommon", "pango", "cairo", "driversi686Linux.mesa", "libgbm", "tigervnc", "xfce.xfce4-session", "xfce.xfce4-panel", "xfce.xfwm4", "xfce.xfdesktop", "xterm", "fluxbox", "xorg.xinit", "xorg.xorgserver", "xorg.xauth"]
 
 [unitTest]
 language = "python3"
@@ -35,6 +35,10 @@ args = "backend"
 task = "workflow.run"
 args = "frontend"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "vnc"
+
 [[workflows.workflow]]
 name = "backend"
 author = "agent"
@@ -58,6 +62,17 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "vnc"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "./start_vnc.sh"
+
+[workflows.workflow.metadata]
+outputType = "vnc"
 
 [[ports]]
 localPort = 5000

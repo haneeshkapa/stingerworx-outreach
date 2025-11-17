@@ -16,9 +16,14 @@ class Crawl4AISearch:
     and validate URLs actually work.
     """
     
-    def __init__(self):
+    def __init__(self, headless=True):
+        import os
+        # Set DISPLAY for VNC if not headless
+        if not headless:
+            os.environ['DISPLAY'] = ':0'
+        
         self.browser_config = BrowserConfig(
-            headless=True,
+            headless=headless,
             browser_type="chromium",
             java_script_enabled=True,
             extra_args=[
@@ -130,12 +135,13 @@ class Crawl4AISearch:
         return None
 
 
-def run_async_search(business_name: str, city: str, state: str) -> Optional[Dict]:
+def run_async_search(business_name: str, city: str, state: str, headless: bool = True) -> Optional[Dict]:
     """
     Synchronous wrapper for async search function.
+    Set headless=False to watch browser automation in VNC viewer.
     """
     try:
-        searcher = Crawl4AISearch()
+        searcher = Crawl4AISearch(headless=headless)
         result = asyncio.run(searcher.find_dealer_website(business_name, city, state))
         return result
     except Exception as e:

@@ -507,6 +507,43 @@ def get_workflow_logs(lines: int = 500):
     except Exception as e:
         return {"logs": f"Error reading logs: {str(e)}"}
 
+@app.post("/api/demo-browser")
+def demo_visible_browser(
+    dealer_name: str = "5 SHOT FIREARMS",
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_current_tenant_id)
+):
+    """
+    Run browser automation in VISIBLE mode (non-headless) for demonstration.
+    Open VNC viewer to watch it live!
+    """
+    from scrapers.crawl4ai_search import run_async_search
+    
+    # Find the dealer in the database
+    dealer = db.query(Dealer).filter(
+        Dealer.tenant_id == tenant_id,
+        Dealer.business_name.ilike(f"%{dealer_name}%")
+    ).first()
+    
+    if not dealer:
+        return {"error": f"Dealer '{dealer_name}' not found"}
+    
+    # Run browser search in VISIBLE mode (headless=False)
+    result = run_async_search(
+        dealer.business_name,
+        dealer.city,
+        dealer.state,
+        headless=False  # VISIBLE BROWSER!
+    )
+    
+    return {
+        "message": f"Browser demo completed for {dealer.business_name}",
+        "dealer": dealer.business_name,
+        "found_website": result is not None,
+        "url": result.get('url') if result else None,
+        "note": "Check VNC viewer to watch the browser automation!"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
