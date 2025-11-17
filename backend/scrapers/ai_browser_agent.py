@@ -45,7 +45,7 @@ class AIBrowserAgent:
                     if '/url?q=' in href:
                         url = href.split('/url?q=')[1].split('&')[0]
                         if url.startswith('http') and not any(skip in url.lower() for skip in 
-                            ['google.com', 'youtube.com', 'facebook.com', 'yelp.com', 'yellowpages.com']):
+                            ['google.com', 'youtube.com', 'facebook.com', 'yelp.com', 'yellowpages.com', 'wikipedia.org']):
                             urls.append(url)
                             if len(urls) >= 5:
                                 break
