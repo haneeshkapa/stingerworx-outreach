@@ -518,6 +518,7 @@ def demo_visible_browser(
     Open VNC viewer to watch it live!
     """
     from scrapers.crawl4ai_search import run_async_search
+    import threading
     
     # Find the dealer in the database
     dealer = db.query(Dealer).filter(
@@ -528,20 +529,29 @@ def demo_visible_browser(
     if not dealer:
         return {"error": f"Dealer '{dealer_name}' not found"}
     
-    # Run browser search in VISIBLE mode (headless=False)
-    result = run_async_search(
-        dealer.business_name,
-        dealer.city,
-        dealer.state,
-        headless=False  # VISIBLE BROWSER!
-    )
+    # Run browser automation in background thread so API responds immediately
+    def run_browser_demo():
+        try:
+            print(f"\n🎬 Starting visible browser demo for {dealer.business_name}...")
+            result = run_async_search(
+                dealer.business_name,
+                dealer.city,
+                dealer.state,
+                headless=False  # VISIBLE BROWSER!
+            )
+            print(f"✅ Browser demo completed! Found: {result.get('url') if result else 'Nothing'}")
+        except Exception as e:
+            print(f"❌ Browser demo error: {str(e)}")
+    
+    # Start background thread
+    thread = threading.Thread(target=run_browser_demo, daemon=True)
+    thread.start()
     
     return {
-        "message": f"Browser demo completed for {dealer.business_name}",
+        "message": f"🎬 Browser demo started for {dealer.business_name}!",
         "dealer": dealer.business_name,
-        "found_website": result is not None,
-        "url": result.get('url') if result else None,
-        "note": "Check VNC viewer to watch the browser automation!"
+        "status": "running",
+        "note": "The VNC viewer should appear automatically in your Replit workspace. Watch the browser navigate in real-time! Check the Logs page to see progress."
     }
 
 if __name__ == "__main__":
