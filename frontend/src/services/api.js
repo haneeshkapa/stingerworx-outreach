@@ -2,14 +2,26 @@ import axios from 'axios'
 
 const getApiUrl = () => {
   if (typeof window === 'undefined') return '/api'
+
+  // Allow explicit override (e.g. VITE_API_URL=https://my-backend)
+  if (import.meta.env?.VITE_API_URL) return import.meta.env.VITE_API_URL
   
-  const hostname = window.location.hostname
-  
+  const { protocol, hostname } = window.location
+
+  // Local dev
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:8000'
   }
-  
-  return ''
+
+  // Replit multi-port: frontend served on "-00-", backend on "-01-"
+  const replitMatch = hostname.match(/^(.*)-0\d-(.*)$/)
+  if (replitMatch) {
+    const [, prefix, suffix] = replitMatch
+    return `${protocol}//${prefix}-01-${suffix}`
+  }
+
+  // Default to same-origin
+  return `${protocol}//${hostname}`
 }
 
 const API_BASE_URL = getApiUrl()
