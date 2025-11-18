@@ -21,19 +21,16 @@ from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
 
 logger = logging.getLogger(__name__)
-ICE_SERVERS = RTCConfiguration(
-    iceServers=[
-        RTCIceServer(
-            urls=[
-                "turn:openrelay.metered.ca:80?transport=tcp",
-                "turn:openrelay.metered.ca:443?transport=tcp",
-            ],
-            username="openrelayproject",
-            credential="openrelayproject",
-        ),
-    ],
-    iceTransportPolicy="relay",
-)
+ICE_SERVERS = RTCConfiguration(iceServers=[
+    RTCIceServer(
+        urls=[
+            "turn:openrelay.metered.ca:80?transport=tcp",
+            "turn:openrelay.metered.ca:443?transport=tcp",
+        ],
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+])
 
 class TestFrameProducer:
     """Generates test pattern frames"""
