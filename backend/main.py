@@ -19,7 +19,7 @@ app = FastAPI(title="Dealer Outreach System")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # no cookies needed; allows wildcard origin in preflight
     allow_methods=["*"],
     allow_headers=["*"],
 )
