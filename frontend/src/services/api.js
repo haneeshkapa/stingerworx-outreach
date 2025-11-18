@@ -13,11 +13,12 @@ const getApiUrl = () => {
     return 'http://localhost:8000'
   }
 
-  // Replit multi-port: frontend served on "-00-", backend on "-01-"
+  // Replit multi-port: frontend served on "-00-", backend typically on "-02-" (3rd exposed port)
   const replitMatch = hostname.match(/^(.*)-0\d-(.*)$/)
   if (replitMatch) {
     const [, prefix, suffix] = replitMatch
-    return `${protocol}//${prefix}-01-${suffix}`
+    // Try the common mapping: 00 -> frontend (5000), 01 -> secondary (5001), 02 -> backend (8000)
+    return `${protocol}//${prefix}-02-${suffix}`
   }
 
   // Default to same-origin
