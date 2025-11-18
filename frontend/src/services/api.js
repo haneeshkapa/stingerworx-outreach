@@ -27,6 +27,14 @@ const getApiUrl = () => {
 
 const API_BASE_URL = getApiUrl()
 
+if (typeof window !== 'undefined') {
+  console.info('[API] Base URL resolved', {
+    baseURL: API_BASE_URL || '(same-origin)',
+    frontendOrigin: window.location.origin,
+    hostname: window.location.hostname
+  })
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -34,6 +42,23 @@ const api = axios.create({
     'X-Tenant-ID': '1'
   }
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (typeof window !== 'undefined') {
+      console.error('[API] Request failed', {
+        message: error.message,
+        code: error.code,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        fullUrl: error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : undefined,
+        origin: window.location.origin
+      })
+    }
+    return Promise.reject(error)
+  }
+)
 
 export const dealersApi = {
   getAll: (params) => api.get('/api/dealers', { params }),
