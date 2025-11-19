@@ -8,9 +8,9 @@ const getApiUrl = () => {
 
   const { protocol, hostname } = window.location
 
-  // Local dev
+  // Local dev - use Vite proxy
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8001'
+    return '' // Empty string = same-origin, Vite proxy handles /api requests
   }
 
   // Replit multi-port: frontend served on "-00-", backend typically on "-02-" (3rd exposed port)

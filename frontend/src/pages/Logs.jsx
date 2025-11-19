@@ -1,6 +1,6 @@
 import { Box, Text, Flex, Icon, Badge, Code, IconButton, Tooltip } from '@chakra-ui/react'
 import { useEffect, useState, useRef } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 import { FiTerminal, FiPause, FiPlay, FiTrash2, FiDownload, FiMaximize2 } from 'react-icons/fi'
 
 const LogLine = ({ line, index }) => {
@@ -40,7 +40,7 @@ const Logs = () => {
   const fetchLogs = async () => {
     if (isPaused) return
     try {
-      const res = await axios.get('http://localhost:8001/api/logs?lines=1000')
+      const res = await api.get('/api/logs?lines=1000')
       if (res.data.logs) {
         setLogs(res.data.logs)
       }

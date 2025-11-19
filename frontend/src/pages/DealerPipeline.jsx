@@ -5,7 +5,7 @@ import {
   Menu, MenuButton, MenuList, MenuItem
 } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 import { FiSearch, FiFilter, FiMoreHorizontal, FiMail, FiExternalLink, FiRefreshCw } from 'react-icons/fi'
 
 const StatusBadge = ({ status }) => {
@@ -32,7 +32,7 @@ const DealerPipeline = () => {
   const fetchDealers = async () => {
     try {
       setLoading(true)
-      const res = await axios.get('http://localhost:8001/api/dealers?limit=100')
+      const res = await api.get('/api/dealers?limit=100')
       setDealers(res.data)
     } catch (error) {
       console.error('Error fetching dealers:', error)

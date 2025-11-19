@@ -1,6 +1,6 @@
 import { Box, Grid, Text, Flex, Icon, Badge, SimpleGrid, Card, CardBody } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 import { FiUsers, FiMessageSquare, FiCheckCircle, FiActivity, FiTarget, FiClock } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 
@@ -80,8 +80,8 @@ const Dashboard = () => {
   const fetchData = async () => {
     try {
       const [statsRes, activityRes] = await Promise.all([
-        axios.get('http://localhost:8001/api/stats'),
-        axios.get('http://localhost:8001/api/activity?limit=20')
+        api.get('/api/stats'),
+        api.get('/api/activity?limit=20')
       ])
       setStats(statsRes.data)
       setActivity(activityRes.data)

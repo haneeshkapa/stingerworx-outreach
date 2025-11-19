@@ -1,7 +1,7 @@
 import { Box, Flex, Text, Input, IconButton, VStack, Icon, Spinner } from '@chakra-ui/react'
 import { useState, useRef, useEffect } from 'react'
 import { FiSend, FiCpu, FiX, FiTerminal } from 'react-icons/fi'
-import axios from 'axios'
+import api from '../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const MotionBox = motion.create(Box)
@@ -31,7 +31,7 @@ const AITerminal = ({ isOpen, onClose }) => {
         setLoading(true)
 
         try {
-            const res = await axios.post('http://localhost:8001/api/ai/chat', {
+            const res = await api.post('/api/ai/chat', {
                 message: userMsg.content
             })
 
