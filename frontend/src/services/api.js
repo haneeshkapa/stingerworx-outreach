@@ -6,23 +6,10 @@ const getApiUrl = () => {
   // Allow explicit override (e.g. VITE_API_URL=https://my-backend)
   if (import.meta.env?.VITE_API_URL) return import.meta.env.VITE_API_URL
 
-  const { protocol, hostname } = window.location
-
-  // Local dev - use Vite proxy
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return '' // Empty string = same-origin, Vite proxy handles /api requests
-  }
-
-  // Replit multi-port: frontend served on "-00-", backend typically on "-02-" (3rd exposed port)
-  const replitMatch = hostname.match(/^(.*)-0\d-(.*)$/)
-  if (replitMatch) {
-    const [, prefix, suffix] = replitMatch
-    // Try the common mapping: 00 -> frontend (5000), 01 -> secondary (5001), 02 -> backend (8000)
-    return `${protocol}//${prefix}-02-${suffix}`
-  }
-
-  // Default to same-origin
-  return `${protocol}//${hostname}`
+  // Always use same-origin (empty baseURL)
+  // In dev: Vite proxy handles /api → http://0.0.0.0:8000
+  // In production: Deploy frontend and backend together
+  return ''
 }
 
 const API_BASE_URL = getApiUrl()

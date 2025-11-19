@@ -1,0 +1,76 @@
+installHook.js:1 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=a0890b7c:5267:5)
+    at App (<anonymous>)
+    at EnvironmentProvider (@chakra-ui_react.js?v=a0890b7c:11929:11)
+    at ColorModeProvider2 (@chakra-ui_react.js?v=a0890b7c:11463:5)
+    at ThemeProvider2 (@chakra-ui_react.js?v=a0890b7c:10688:23)
+    at ThemeProvider3 (@chakra-ui_react.js?v=a0890b7c:11857:11)
+    at Provider (@chakra-ui_react.js?v=a0890b7c:11956:5)
+    at ChakraProvider2 (@chakra-ui_react.js?v=a0890b7c:13292:5)
+overrideMethod @ installHook.js:1Understand this warning
+installHook.js:1 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. Error Component Stack
+    at BrowserRouter (react-router-dom.js?v=a0890b7c:5267:5)
+    at App (<anonymous>)
+    at EnvironmentProvider (@chakra-ui_react.js?v=a0890b7c:11929:11)
+    at ColorModeProvider2 (@chakra-ui_react.js?v=a0890b7c:11463:5)
+    at ThemeProvider2 (@chakra-ui_react.js?v=a0890b7c:10688:23)
+    at ThemeProvider3 (@chakra-ui_react.js?v=a0890b7c:11857:11)
+    at Provider (@chakra-ui_react.js?v=a0890b7c:11956:5)
+    at ChakraProvider2 (@chakra-ui_react.js?v=a0890b7c:13292:5)
+overrideMethod @ installHook.js:1Understand this warning
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.Understand this error
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.Understand this error
+/favicon.ico:1  Failed to load resource: the server responded with a status of 404 (Not Found)Understand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed Object
+overrideMethod @ installHook.js:1Understand this error
+installHook.js:1 Error fetching dashboard data: AxiosError
+overrideMethod @ installHook.js:1Understand this error
+c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20:1  Failed to load resource: net::ERR_FAILEDUnderstand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed Object
+overrideMethod @ installHook.js:1Understand this error
+installHook.js:1 Error fetching dashboard data: AxiosError
+overrideMethod @ installHook.js:1Understand this error
+c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats:1  Failed to load resource: net::ERR_FAILEDUnderstand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed Object
+overrideMethod @ installHook.js:1Understand this error
+c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats:1  Failed to load resource: net::ERR_FAILEDUnderstand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed Object
+overrideMethod @ installHook.js:1Understand this error
+c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20:1  Failed to load resource: net::ERR_FAILEDUnderstand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed {message: 'Network Error', code: 'ERR_NETWORK', url: '/api/stats', baseURL: 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev', fullUrl: 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats', …}
+overrideMethod @ installHook.js:1
+(anonymous) @ api.js:50
+Promise.then
+_request @ axios.js?v=a0890b7c:2334
+request @ axios.js?v=a0890b7c:2219
+Axios.<computed> @ axios.js?v=a0890b7c:2346
+wrap @ axios.js?v=a0890b7c:8
+fetchData @ Dashboard.jsx:83Understand this error
+installHook.js:1 Error fetching dashboard data: AxiosError {message: 'Network Error', name: 'AxiosError', code: 'ERR_NETWORK', config: {…}, request: XMLHttpRequest, …}
+overrideMethod @ installHook.js:1
+fetchData @ Dashboard.jsx:89Understand this error
+Dashboard.jsx:83  GET https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/stats net::ERR_FAILED
+dispatchXhrRequest @ axios.js?v=a0890b7c:1696
+xhr @ axios.js?v=a0890b7c:1573
+dispatchRequest @ axios.js?v=a0890b7c:2107
+_request @ axios.js?v=a0890b7c:2327
+request @ axios.js?v=a0890b7c:2219
+Axios.<computed> @ axios.js?v=a0890b7c:2346
+wrap @ axios.js?v=a0890b7c:8
+fetchData @ Dashboard.jsx:83Understand this error
+(index):1 Access to XMLHttpRequest at 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20' from origin 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-00-2jw3obiuzplzq.worf.replit.dev' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+installHook.js:1 [API] Request failed {message: 'Network Error', code: 'ERR_NETWORK', url: '/api/activity?limit=20', baseURL: 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev', fullUrl: 'https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20', …}
+overrideMethod @ installHook.js:1
+(anonymous) @ api.js:50
+Promise.then
+_request @ axios.js?v=a0890b7c:2334
+request @ axios.js?v=a0890b7c:2219
+Axios.<computed> @ axios.js?v=a0890b7c:2346
+wrap @ axios.js?v=a0890b7c:8
+fetchData @ Dashboard.jsx:84Understand this error
+Dashboard.jsx:84  GET https://c7baea14-95ee-4ac7-bd21-ddf1c5eca712-02-2jw3obiuzplzq.worf.replit.dev/api/activity?limit=20 net::ERR_FAILED
