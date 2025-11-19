@@ -4,7 +4,7 @@
 AI-driven multi-tenant SaaS platform for automated dealer discovery and outreach. Built for suppressor manufacturers (starting with Stingerworx) to connect with Class 3 SOT dealers across the United States.
 
 ## Current Status (MVP Phase 1 - In Progress)
-**Date:** November 16, 2025  
+**Date:** November 19, 2025  
 **First Client:** Stingerworx (Craig)  
 **Status:** Foundation Complete, Building Core Features
 
@@ -22,6 +22,9 @@ AI-driven multi-tenant SaaS platform for automated dealer discovery and outreach
 ✅ **Real-Time Activity Feed** - Live monitoring of enrichment progress  
 ✅ **Live Logs Viewer** - Terminal-style real-time workflow monitoring  
 ✅ **WebRTC Browser Streaming** - Live video stream of browser automation using aiortc (10 FPS @ 720p)
+✅ **Contact Page Detection** - Finds contact forms on Class 3 dealer websites for automated outreach
+✅ **Form Field Analysis** - Extracts form field metadata (name, type, required) for future automation
+✅ **Multi-Contact Method Storage** - Stores ALL contact pages found (forms, emails, phones) with priority ranking
 
 ### In Progress
 🔄 Contact form automation with Playwright  
@@ -156,6 +159,15 @@ Automated AI-driven system that:
 - **Multi-Tenant SaaS:** Scales to multiple manufacturer clients
 
 ## Recent Changes
+- 2025-11-19: **Contact Page Detection & Form Field Analysis**
+  - Built ContactPageDetector class that scans Class 3 verified dealer websites for contact pages
+  - Searches for common contact URLs: /contact, /contact-us, /dealer-inquiry, /become-a-dealer, /wholesale-inquiry
+  - Analyzes form fields and extracts metadata: field name, type, required status, placeholder text
+  - Falls back to email/phone extraction if no forms found (doesn't skip Class 3 dealers)
+  - Stores ALL contact pages found (not just one) in dealer.extra_data.contact_pages[] with priority ranking
+  - Integrated into Class3Verifier workflow - runs automatically for Class 3 verified dealers only
+  - Updated UI to show FORM/EMAIL/PHONE badges on dealer cards based on preferred contact method
+  - System now prioritizes contact forms over email for outreach (bypasses spam filters)
 - 2025-11-17: **WebRTC Browser Streaming - Optimized Screenshot Approach**
   - Reverted from CDP (compatibility issues in Replit) to optimized screenshot streaming
   - Background frame capture loop for non-blocking operation
