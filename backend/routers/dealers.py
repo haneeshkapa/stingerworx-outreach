@@ -159,7 +159,9 @@ def import_dealers_from_state(
                             **(dealer.extra_data or {}),
                             'class3_confidence': enriched.get('class3_confidence', 0.0),
                             'class3_evidence': enriched.get('class3_evidence', ''),
-                            'class3_verified_at': datetime.now().isoformat()
+                            'class3_verified_at': datetime.now().isoformat(),
+                            'contact_pages': enriched.get('contact_pages', []),
+                            'preferred_contact_method': enriched.get('preferred_contact_method', 'none')
                         }
                     
                     success_count += 1
@@ -245,7 +247,9 @@ def re_enrich_all_dealers(
                     **(dealer.extra_data or {}),
                     'class3_confidence': enriched.get('class3_confidence', 0.0),
                     'class3_evidence': enriched.get('class3_evidence', ''),
-                    'class3_verified_at': datetime.now().isoformat()
+                    'class3_verified_at': datetime.now().isoformat(),
+                    'contact_pages': enriched.get('contact_pages', []),
+                    'preferred_contact_method': enriched.get('preferred_contact_method', 'none')
                 }
             
             # Commit after each dealer to avoid losing progress

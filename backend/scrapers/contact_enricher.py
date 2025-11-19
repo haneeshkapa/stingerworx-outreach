@@ -11,6 +11,7 @@ from typing import Dict, Optional
 import logging
 from scrapers.ai_browser_agent import AIBrowserAgent
 from scrapers.class3_verifier import Class3Verifier
+from scrapers.contact_page_detector import ContactPageDetector
 from scrapers.crawl4ai_search import run_async_search
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,7 @@ class ContactEnricher:
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
         self.ai_agent = AIBrowserAgent()  # Keep for legacy support
         self.class3_verifier = Class3Verifier(db, tenant_id) if db and tenant_id else None
+        self.contact_page_detector = ContactPageDetector(db, tenant_id) if db and tenant_id else None
         self.use_crawl4ai = True  # Use Crawl4AI with Chromium browser automation
     
     def find_website(self, business_name: str, city: str, state: str) -> Optional[str]:
@@ -206,6 +208,22 @@ class ContactEnricher:
             enriched['class3_verified'] = class3_result.get('has_class3', False)
             enriched['class3_confidence'] = class3_result.get('confidence', 0.0)
             enriched['class3_evidence'] = class3_result.get('evidence', '')
+            
+            # If Class 3 verified, find contact pages for outreach
+            if class3_result.get('has_class3') and self.contact_page_detector:
+                website = enriched.get('website')
+                if website:
+                    contact_pages = self.contact_page_detector.find_contact_pages(
+                        website,
+                        dealer['business_name']
+                    )
+                    
+                    if contact_pages:
+                        enriched['contact_pages'] = contact_pages
+                        enriched['preferred_contact_method'] = self.contact_page_detector.determine_preferred_method(contact_pages)
+                    else:
+                        enriched['contact_pages'] = []
+                        enriched['preferred_contact_method'] = 'none'
         
         logger.info(f"Enriched dealer: {enriched}")
         return enriched

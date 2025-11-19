@@ -147,16 +147,46 @@ const DealerPipeline = () => {
                 </Td>
                 <Td>
                   <Flex gap={2}>
-                    {dealer.email && (
-                      <Tooltip label={dealer.email}>
-                        <Badge colorScheme="blue" variant="subtle">EMAIL</Badge>
-                      </Tooltip>
-                    )}
-                    {dealer.contact_form_url && (
-                      <Tooltip label="Has Contact Form">
-                        <Badge colorScheme="orange" variant="subtle">FORM</Badge>
-                      </Tooltip>
-                    )}
+                    {/* Show contact method badges based on contact_pages data */}
+                    {(() => {
+                      const contactPages = dealer.extra_data?.contact_pages || []
+                      const preferredMethod = dealer.extra_data?.preferred_contact_method || 'none'
+                      
+                      // Check if we have form
+                      const hasForm = contactPages.some(page => page.has_form) || preferredMethod === 'form'
+                      // Check if we have email
+                      const hasEmail = contactPages.some(page => page.fallback_email) || dealer.email
+                      // Check if we have phone
+                      const hasPhone = contactPages.some(page => page.fallback_phone) || dealer.phone
+                      
+                      // Count total contact pages found
+                      const pageCount = contactPages.length
+                      
+                      return (
+                        <>
+                          {hasForm && (
+                            <Tooltip label={`${pageCount} contact page(s) with forms`}>
+                              <Badge colorScheme="green" variant="solid" fontSize="xs">
+                                FORM {pageCount > 0 ? `(${pageCount})` : ''}
+                              </Badge>
+                            </Tooltip>
+                          )}
+                          {hasEmail && !hasForm && (
+                            <Tooltip label={dealer.email || 'Email available'}>
+                              <Badge colorScheme="blue" variant="subtle" fontSize="xs">EMAIL</Badge>
+                            </Tooltip>
+                          )}
+                          {hasPhone && !hasForm && !hasEmail && (
+                            <Tooltip label="Phone available">
+                              <Badge colorScheme="orange" variant="subtle" fontSize="xs">PHONE</Badge>
+                            </Tooltip>
+                          )}
+                          {!hasForm && !hasEmail && !hasPhone && (
+                            <Text fontSize="xs" color="dark.muted">-</Text>
+                          )}
+                        </>
+                      )
+                    })()}
                   </Flex>
                 </Td>
                 <Td isNumeric>
