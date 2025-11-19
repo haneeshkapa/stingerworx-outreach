@@ -16,6 +16,7 @@ import {
   Divider,
   Flex,
   Spinner,
+  Switch,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { FaCheckCircle } from 'react-icons/fa'
@@ -78,6 +79,7 @@ const US_STATES = [
 export default function ImportDealers() {
   const [importing, setImporting] = useState({})
   const [imported, setImported] = useState({})
+  const [isDemoMode, setIsDemoMode] = useState(false)
   const [sessionId, setSessionId] = useState(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [connectionState, setConnectionState] = useState('new')
@@ -193,22 +195,25 @@ export default function ImportDealers() {
   const handleImport = async (stateCode) => {
     setImporting(prev => ({ ...prev, [stateCode]: true }))
     try {
-      const activeSessionId = await ensureStreamStarted()
+      const activeSessionId = isDemoMode ? await ensureStreamStarted() : null
       await dealersApi.importFromState(stateCode)
       setImported(prev => ({ ...prev, [stateCode]: true }))
+
       toast({
         title: 'Import started',
-        description: `Importing dealers from ${stateCode}. AI enrichment running in background.`,
+        description: `Importing dealers from ${stateCode}. ${isDemoMode ? 'Watch the stream!' : 'Running in background.'}`,
         status: 'success',
         duration: 4000,
       })
 
-      const sid = activeSessionId || sessionId
-      if (sid) {
-        const query = `${stateCode} class 3 sot firearms dealer`
-        await api.post(`/api/webrtc/search/${sid}`, { query })
-        // Kick a deeper crawl to move the mouse and click first result
-        await api.post(`/api/webrtc/crawl/${sid}`, { state: stateCode })
+      if (isDemoMode) {
+        const sid = activeSessionId || sessionId
+        if (sid) {
+          const query = `${stateCode} class 3 sot firearms dealer`
+          await api.post(`/api/webrtc/search/${sid}`, { query })
+          // Kick a deeper crawl to move the mouse and click first result
+          await api.post(`/api/webrtc/crawl/${sid}`, { state: stateCode })
+        }
       }
     } catch (error) {
       console.error('Error importing:', error)
@@ -241,7 +246,7 @@ export default function ImportDealers() {
             </Button>
           </HStack>
           <Text color="gray.600">
-            Import Class 3 SOT dealer candidates from the official ATF FFL database. 
+            Import Class 3 SOT dealer candidates from the official ATF FFL database.
             The system will automatically verify Class 3 status via AI website analysis.
           </Text>
         </Box>
@@ -307,7 +312,20 @@ export default function ImportDealers() {
         <Divider />
 
         <Box>
-          <Heading size="md" mb={4}>Select States to Import</Heading>
+          <HStack justify="space-between" mb={4}>
+            <Heading size="md">Select States to Import</Heading>
+            <HStack>
+              <Text fontSize="sm" color={isDemoMode ? "brand.500" : "gray.500"} fontWeight="bold">
+                Demo Mode (Visual)
+              </Text>
+              <Switch
+                isChecked={isDemoMode}
+                onChange={(e) => setIsDemoMode(e.target.checked)}
+                colorScheme="brand"
+                size="lg"
+              />
+            </HStack>
+          </HStack>
           <SimpleGrid columns={{ base: 2, md: 4, lg: 6 }} spacing={3}>
             {US_STATES.map((state) => (
               <Button
@@ -318,6 +336,7 @@ export default function ImportDealers() {
                 isLoading={importing[state.code]}
                 onClick={() => handleImport(state.code)}
                 leftIcon={imported[state.code] ? <FaCheckCircle /> : undefined}
+                _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
               >
                 {state.code}
               </Button>

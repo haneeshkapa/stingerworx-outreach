@@ -1,193 +1,156 @@
-import { useState, useEffect } from 'react'
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Button,
-  Badge,
-  useToast,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription
-} from '@chakra-ui/react'
-import { FiRefreshCw, FiPlay, FiPause, FiMonitor } from 'react-icons/fi'
-import api from '../services/api'
+import { Box, Text, Flex, Icon, Badge, Code, IconButton, Tooltip } from '@chakra-ui/react'
+import { useEffect, useState, useRef } from 'react'
+import axios from 'axios'
+import { FiTerminal, FiPause, FiPlay, FiTrash2, FiDownload, FiMaximize2 } from 'react-icons/fi'
 
-function Logs() {
+const LogLine = ({ line, index }) => {
+  // Basic syntax highlighting
+  let color = 'gray.300'
+  if (line.includes('ERROR') || line.includes('CRITICAL')) color = 'red.400'
+  if (line.includes('WARNING')) color = 'yellow.400'
+  if (line.includes('INFO')) color = 'blue.300'
+  if (line.includes('SUCCESS') || line.includes('Completed')) color = 'green.400'
+
+  const timestamp = line.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+  const content = timestamp ? line.replace(timestamp[0], '').trim() : line
+
+  return (
+    <Flex fontFamily="mono" fontSize="sm" lineHeight="1.6" _hover={{ bg: 'rgba(255,255,255,0.05)' }} px={2}>
+      <Text color="dark.muted" minW="40px" userSelect="none" textAlign="right" mr={4} fontSize="xs">
+        {index + 1}
+      </Text>
+      {timestamp && (
+        <Text color="dark.muted" mr={3} minW="150px" fontSize="xs">
+          {timestamp[0]}
+        </Text>
+      )}
+      <Text color={color} whiteSpace="pre-wrap" wordBreak="break-all">
+        {content}
+      </Text>
+    </Flex>
+  )
+}
+
+const Logs = () => {
   const [logs, setLogs] = useState('')
-  const [logInfo, setLogInfo] = useState(null)
-  const [isAutoRefresh, setIsAutoRefresh] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const [demoLoading, setDemoLoading] = useState(false)
-  const toast = useToast()
+  const [isPaused, setIsPaused] = useState(false)
+  const bottomRef = useRef(null)
+  const containerRef = useRef(null)
 
   const fetchLogs = async () => {
+    if (isPaused) return
     try {
-      setLoading(true)
-      const response = await api.get('/api/logs?lines=1000')
-      setLogs(response.data.logs)
-      setLogInfo({
-        file: response.data.file,
-        totalLines: response.data.total_lines,
-        showingLines: response.data.showing_lines
-      })
+      const res = await axios.get('http://localhost:8001/api/logs?lines=1000')
+      if (res.data.logs) {
+        setLogs(res.data.logs)
+      }
     } catch (error) {
-      console.error('Failed to fetch logs:', error)
-      toast({
-        title: 'Error loading logs',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
-    } finally {
-      setLoading(false)
+      console.error('Error fetching logs:', error)
     }
   }
 
   useEffect(() => {
     fetchLogs()
+    const interval = setInterval(fetchLogs, 2000)
+    return () => clearInterval(interval)
+  }, [isPaused])
 
-    if (isAutoRefresh) {
-      const interval = setInterval(fetchLogs, 3000)
-      return () => clearInterval(interval)
+  useEffect(() => {
+    if (!isPaused && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [isAutoRefresh])
+  }, [logs, isPaused])
 
-  const handleRefresh = () => {
-    fetchLogs()
+  const handleDownload = () => {
+    const blob = new Blob([logs], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `system-logs-${new Date().toISOString()}.log`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
-  const toggleAutoRefresh = () => {
-    setIsAutoRefresh(!isAutoRefresh)
-  }
-
-  const handleWatchBrowserLive = async () => {
-    try {
-      setDemoLoading(true)
-      const response = await api.post('/api/demo-browser?dealer_name=5 SHOT FIREARMS')
-      
-      toast({
-        title: '🎬 Browser Demo Started!',
-        description: response.data.note || 'The VNC viewer should appear automatically. Watch the browser navigate in real-time!',
-        status: 'success',
-        duration: 8000,
-        isClosable: true,
-      })
-    } catch (error) {
-      console.error('Failed to start browser demo:', error)
-      toast({
-        title: 'Error starting demo',
-        description: error.response?.data?.error || error.message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setDemoLoading(false)
-    }
-  }
+  const logLines = logs.split('\n').filter(line => line.trim())
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <VStack spacing={6} align="stretch">
-        <HStack justify="space-between">
-          <Box>
-            <Heading size="lg">Live Workflow Logs</Heading>
-            <Text color="gray.600" fontSize="sm" mt={1}>
-              Real-time monitoring of backend processes and Crawl4AI activity
-            </Text>
-          </Box>
-          <HStack spacing={3}>
-            <Badge colorScheme={isAutoRefresh ? 'green' : 'gray'}>
-              {isAutoRefresh ? 'Auto-refreshing' : 'Paused'}
-            </Badge>
-            <Button
-              size="sm"
-              leftIcon={isAutoRefresh ? <FiPause /> : <FiPlay />}
-              onClick={toggleAutoRefresh}
-              variant="outline"
-            >
-              {isAutoRefresh ? 'Pause' : 'Resume'}
-            </Button>
-            <Button
-              size="sm"
-              leftIcon={<FiRefreshCw />}
-              onClick={handleRefresh}
-              isLoading={loading}
-              colorScheme="blue"
-            >
-              Refresh
-            </Button>
-          </HStack>
-        </HStack>
+    <Box h="calc(100vh - 100px)" maxW="1600px" mx="auto" display="flex" flexDirection="column">
+      <Flex mb={4} justify="space-between" align="center">
+        <Box>
+          <Text fontSize="2xl" fontWeight="bold" color="white" letterSpacing="tight">
+            System Logs
+          </Text>
+          <Text color="dark.muted" fontSize="sm">
+            Live backend process output
+          </Text>
+        </Box>
+        <Flex gap={2}>
+          <Tooltip label={isPaused ? "Resume Auto-scroll" : "Pause Auto-scroll"}>
+            <IconButton
+              icon={isPaused ? <FiPlay /> : <FiPause />}
+              onClick={() => setIsPaused(!isPaused)}
+              variant="ghost"
+              colorScheme={isPaused ? "yellow" : "gray"}
+            />
+          </Tooltip>
+          <Tooltip label="Download Logs">
+            <IconButton icon={<FiDownload />} onClick={handleDownload} variant="ghost" />
+          </Tooltip>
+          <Tooltip label="Clear View (Local)">
+            <IconButton icon={<FiTrash2 />} onClick={() => setLogs('')} variant="ghost" colorScheme="red" />
+          </Tooltip>
+        </Flex>
+      </Flex>
 
-        <Alert status="info" borderRadius="md">
-          <AlertIcon />
-          <Box flex="1">
-            <AlertTitle>Watch Browser Automation Live!</AlertTitle>
-            <AlertDescription>
-              Click the button below to launch Chromium in visible mode. The VNC viewer will automatically appear in your Replit workspace so you can watch it navigate websites in real-time.
-            </AlertDescription>
-          </Box>
-          <Button
-            colorScheme="purple"
-            leftIcon={<FiMonitor />}
-            onClick={handleWatchBrowserLive}
-            isLoading={demoLoading}
-            loadingText="Launching..."
-            size="md"
-          >
-            Watch Browser Live (VNC)
-          </Button>
-        </Alert>
+      <Box
+        flex={1}
+        bg="#0D0D0D"
+        borderRadius="lg"
+        border="1px solid"
+        borderColor="dark.border"
+        overflow="hidden"
+        display="flex"
+        flexDirection="column"
+        boxShadow="2xl"
+      >
+        {/* Terminal Header */}
+        <Flex bg="dark.card" px={4} py={2} borderBottom="1px" borderColor="dark.border" align="center">
+          <Icon as={FiTerminal} color="brand.500" mr={2} />
+          <Text fontSize="xs" fontFamily="mono" color="dark.muted">root@stingerworx-backend:~/logs</Text>
+          <Flex ml="auto" gap={2}>
+            <Box w={2} h={2} borderRadius="full" bg="red.500" />
+            <Box w={2} h={2} borderRadius="full" bg="yellow.500" />
+            <Box w={2} h={2} borderRadius="full" bg="green.500" />
+          </Flex>
+        </Flex>
 
-        {logInfo && (
-          <HStack spacing={4} fontSize="sm" color="gray.600">
-            <Text>📁 {logInfo.file?.split('/').pop()}</Text>
-            <Text>📊 Showing {logInfo.showingLines} of {logInfo.totalLines} lines</Text>
-          </HStack>
-        )}
-
+        {/* Terminal Content */}
         <Box
-          bg="gray.900"
-          color="green.300"
-          p={6}
-          borderRadius="lg"
-          fontFamily="monospace"
-          fontSize="sm"
-          overflowX="auto"
-          maxH="70vh"
+          ref={containerRef}
+          p={4}
           overflowY="auto"
-          boxShadow="lg"
-          position="relative"
+          flex={1}
+          fontFamily="mono"
+          css={{
+            '&::-webkit-scrollbar': { width: '8px' },
+            '&::-webkit-scrollbar-track': { background: '#0D0D0D' },
+            '&::-webkit-scrollbar-thumb': { background: '#333', borderRadius: '4px' },
+          }}
         >
-          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-            {logs || 'Loading logs...'}
-          </pre>
-          
-          {loading && (
-            <Box
-              position="absolute"
-              top={2}
-              right={2}
-              bg="blue.500"
-              color="white"
-              px={3}
-              py={1}
-              borderRadius="md"
-              fontSize="xs"
-              fontFamily="sans-serif"
-            >
-              Refreshing...
-            </Box>
+          {logLines.map((line, i) => (
+            <LogLine key={i} line={line} index={i} />
+          ))}
+          <div ref={bottomRef} />
+
+          {logLines.length === 0 && (
+            <Text color="dark.muted" textAlign="center" mt={10}>
+              Waiting for log stream...
+            </Text>
           )}
         </Box>
-      </VStack>
-    </Container>
+      </Box>
+    </Box>
   )
 }
 

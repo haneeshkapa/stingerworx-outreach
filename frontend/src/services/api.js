@@ -5,12 +5,12 @@ const getApiUrl = () => {
 
   // Allow explicit override (e.g. VITE_API_URL=https://my-backend)
   if (import.meta.env?.VITE_API_URL) return import.meta.env.VITE_API_URL
-  
+
   const { protocol, hostname } = window.location
 
   // Local dev
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8000'
+    return 'http://localhost:8001'
   }
 
   // Replit multi-port: frontend served on "-00-", backend typically on "-02-" (3rd exposed port)

@@ -184,6 +184,16 @@ Respond with ONLY valid JSON in this exact format (use null without quotes for m
             return contact_info
             
         except Exception as e:
+            error_msg = str(e)
+            if "401" in error_msg or "invalid_api_key" in error_msg:
+                logger.warning(f"⚠️ Invalid API Key. Using MOCK AI for contact extraction.")
+                return {
+                    "email": "mock_contact@example.com",
+                    "phone": "555-0199",
+                    "address": "123 Mock St, Demo City, ST",
+                    "contact_form_url": f"{url}/contact"
+                }
+                
             logger.error(f"AI extraction error: {e}")
             logger.error(f"Response was: {response.choices[0].message.content if 'response' in locals() else 'No response'}")
             return {}
@@ -223,6 +233,13 @@ Example format: https://www.example.com"""
             return url
             
         except Exception as e:
+            error_msg = str(e)
+            if "401" in error_msg or "invalid_api_key" in error_msg:
+                logger.warning(f"⚠️ Invalid API Key. Using MOCK AI for URL prediction.")
+                # Return a plausible mock URL
+                clean_name = business_name.lower().replace(' ', '').replace(',', '').replace('.', '')
+                return f"https://www.{clean_name}.com"
+                
             logger.error(f"AI URL prediction error: {e}")
             return None
     

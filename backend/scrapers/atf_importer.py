@@ -23,7 +23,8 @@ class ATFImporter:
             os.path.dirname(os.path.dirname(__file__)), 
             '..', 
             'attached_assets', 
-            'atf_dealers_1763322022600.xlsx'
+            'atf_dealers_1763322022600.xlsx',
+            '/Users/haneeshkapa/stingerworx-outreach/atf_dealers.xlsx'
         )
     
     def import_dealers_from_state(self, state_code: str):
